@@ -12,7 +12,7 @@ export type InvocationRequest = {
     memorySize: number;
     logGroupName: string;
     logStreamName: string;
-    envVars: Map<string, string>;
+    envVars: Record<string, string>;
     identity?: CognitoIdentity | undefined;
     clientContext?: ClientContext | undefined;
     request: any;

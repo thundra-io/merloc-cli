@@ -1,3 +1,5 @@
+import Error from './Error';
+
 export type BrokerMessage = {
     id: string;
     connectionName: string;

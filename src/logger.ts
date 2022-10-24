@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import * as configs from './configs';
 
 export function isDebugEnabled(): boolean {
-    return configs.isDebugEnabled();
+    return configs.isVerboseEnabled();
 }
 
 function _timeAsString(): string {

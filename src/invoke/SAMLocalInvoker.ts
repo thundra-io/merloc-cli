@@ -8,6 +8,7 @@ export default class SAMLocalInvoker implements Invoker {
     name(): string {
         return INVOKER_NAMES.SAM_LOCAL;
     }
+
     async invoke(
         invocationRequest: InvocationRequest
     ): Promise<InvocationResponse> {
@@ -20,5 +21,17 @@ export default class SAMLocalInvoker implements Invoker {
         }
         // TODO Implement
         return Promise.resolve(undefined as unknown as InvocationResponse);
+    }
+
+    async reload(): Promise<void> {
+        logger.debug('<SAMLocalInvoker> Reloading ...');
+        // TODO Implement
+        return Promise.resolve();
+    }
+
+    async destroy(): Promise<void> {
+        logger.debug('<SAMLocalInvoker> Destroying ...');
+        // TODO Implement
+        return Promise.resolve();
     }
 }

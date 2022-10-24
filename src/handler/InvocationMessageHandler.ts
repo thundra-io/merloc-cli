@@ -3,14 +3,16 @@ import MessageHandler from './MessageHandler';
 import InvocationRequest from '../domain/InvocationRequest';
 import InvokeManager from '../invoke/InvokeManager';
 import InvocationResponse from '../domain/InvocationResponse';
-import BrokerPayload from '../domain/BrokerPayload';
+import BrokerResponse from '../domain/BrokerResponse';
+import { MESSAGE_TYPES } from '../constants';
 
 export default class InvocationMessageHandler
     implements MessageHandler<InvocationRequest>
 {
     async handleMessage(
         invocationRequest: InvocationRequest
-    ): Promise<BrokerPayload | void> {
+    ): Promise<BrokerResponse | void> {
+        invocationRequest.request = JSON.parse(invocationRequest.request);
         if (logger.isDebugEnabled()) {
             logger.debug(
                 `<InvocationMessageHandler> Handling invocation request: ${logger.toJson(
@@ -29,6 +31,9 @@ export default class InvocationMessageHandler
         }
         if (invocationResponse) {
             return {
+                type: invocationResponse.error
+                    ? MESSAGE_TYPES.CLIENT_ERROR
+                    : MESSAGE_TYPES.CLIENT_RESPONSE,
                 data: invocationResponse.response,
                 error: invocationResponse.error,
             };

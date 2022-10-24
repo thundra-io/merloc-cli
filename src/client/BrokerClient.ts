@@ -196,7 +196,9 @@ export default class BrokerClient {
 
             // Reconnect again
             setImmediate(() => {
-                logger.debug('Connection is closed, so reconnecting again ...');
+                logger.debug(
+                    '<BrokerClient> Connection is closed, so reconnecting again ...'
+                );
                 this.connect(this.timeoutDuration);
             });
         });

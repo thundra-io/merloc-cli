@@ -1,5 +1,5 @@
-import BrokerPayload from '../domain/BrokerPayload';
+import BrokerResponse from '../domain/BrokerResponse';
 
 export default interface MessageHandler<Req> {
-    handleMessage(request: Req): Promise<BrokerPayload | void>;
+    handleMessage(request: Req): Promise<BrokerResponse | void>;
 }

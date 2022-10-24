@@ -1,3 +1,5 @@
+import Error from './Error';
+
 export type BrokerPayload = {
     error?: Error;
     data?: any;
