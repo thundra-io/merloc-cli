@@ -4,7 +4,10 @@ import * as logger from '../logger';
 import BrokerMessage from '../domain/BrokerMessage';
 import BrokerEnvelope from '../domain/BrokerEnvelope';
 import BrokerPayload from '../domain/BrokerPayload';
-import { CLIENT_CONNECTION_NAME_PREFIX } from '../constants';
+import {
+    CLIENT_CONNECTION_NAME_PREFIX,
+    CONNECTION_API_KEY_SEPARATOR,
+} from '../constants';
 
 const CONNECTION_NAME_HEADER_NAME = 'x-api-key';
 const BROKER_CONNECT_TIMEOUT = 3000;
@@ -27,6 +30,7 @@ export default class BrokerClient {
     private brokerSocket: WebSocket | null;
     private brokerURL: string;
     private connectionName: string;
+    private apiKey: string;
     private connected: boolean;
     private connectPromise?: Promise<undefined>;
     private pingTask?: NodeJS.Timeout;
@@ -38,10 +42,12 @@ export default class BrokerClient {
     constructor(
         brokerURL: string,
         connectionName: string,
+        apiKey: string,
         messageListener?: MessageListener
     ) {
         this.brokerURL = this._normalizeBrokerUrl(brokerURL);
         this.connectionName = connectionName;
+        this.apiKey = apiKey;
         this.connected = false;
         this.messageMap = new Map<string, InFlightMessage>();
         this.fragmentedMessages = new Map<
@@ -79,6 +85,12 @@ export default class BrokerClient {
         this.fragmentedMessages.clear();
     }
 
+    getFullConnectionName(): string {
+        return this.apiKey
+            ? `${this.connectionName}${CONNECTION_API_KEY_SEPARATOR}${this.apiKey}`
+            : this.connectionName;
+    }
+
     async connect(timeoutDuration: number = BROKER_CONNECT_TIMEOUT) {
         if (this.connected) {
             logger.debug(
@@ -104,8 +116,7 @@ export default class BrokerClient {
 
         this.brokerSocket = new WebSocket(this.brokerURL, {
             headers: {
-                [CONNECTION_NAME_HEADER_NAME]:
-                    CLIENT_CONNECTION_NAME_PREFIX + this.connectionName,
+                [CONNECTION_NAME_HEADER_NAME]: `${CLIENT_CONNECTION_NAME_PREFIX}${this.getFullConnectionName()}`,
             },
             handshakeTimeout: timeoutDuration,
             followRedirects: true,

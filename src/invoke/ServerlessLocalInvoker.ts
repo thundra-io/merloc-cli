@@ -8,16 +8,24 @@ import { v4 as uuidv4 } from 'uuid';
 import chalk from 'chalk';
 import portscanner, { Status } from 'portscanner';
 
+import BaseInvoker from './BaseInvoker';
 import * as logger from '../logger';
-import Invoker from './Invoker';
 import InvocationRequest from '../domain/InvocationRequest';
 import InvocationResponse from '../domain/InvocationResponse';
 import {
     INVOKER_NAMES,
     AWS_LAMBDA_HEADERS,
     AWS_LAMBDA_ENV_VARS,
+    FUNCTION_LOG_COLORS,
 } from '../constants';
-import { getSLSOptions, isDebuggingEnabled } from '../configs';
+import {
+    getSAMInitCommand,
+    getSAMReloadCommand,
+    getSLSInitCommand,
+    getSLSOptions,
+    getSLSReloadCommand,
+    isDebuggingEnabled,
+} from '../configs';
 
 type DockerEnv = {
     serverlessService: any;
@@ -29,14 +37,17 @@ type DockerEnv = {
     initialized: boolean;
     closed: boolean;
     runtime: string;
+    initTime: number;
     functionEnvVars: Record<string, string>;
 };
 
 const BASE_PORT = 10000;
 const MAX_PORT = 65536;
 const MAX_LAMBDA_API_UP_WAIT_TIME = 60 * 1000; // 1 minute
+const CREDENTIALS_EXPIRE_TIME = 60 * 60 * 1000; // 1 hour
 const DOCKER_INTERNAL_LAMBDA_API_PORT = 9001;
 const DOCKER_INTERNAL_DEBUG_PORT = 9002;
+const MERLOC_BROKER_URL_ENV_VAR_NAME = 'MERLOC_BROKER_URL';
 const MERLOC_ENV_ID_ENV_VAR_NAME = 'MERLOC_ENV_ID';
 const MERLOC_SLS_FUNCTION_NAME_ENV_VAR_NAME = 'MERLOC_SLS_FUNCTION_NAME';
 const MERLOC_HOST_DEBUG_PORT_ENV_VAR_NAME = 'MERLOC_HOST_DEBUG_PORT';
@@ -53,8 +64,11 @@ const FUNCTION_ENV_VARS_TO_IGNORE = new Set([
     '_X_AMZN_TRACE_ID',
     'AWS_LAMBDA_RUNTIME_API',
     'AWS_LAMBDA_EXEC_WRAPPER',
+    'NODE_OPTIONS',
+    // Clear MerLoc broker URL env var so it will be disabled in the local Lambda container
+    MERLOC_BROKER_URL_ENV_VAR_NAME,
 ]);
-const FUNCTION_ENV_VARS_TO_TRIGGER_RELOAD = new Set([
+const FUNCTION_AWS_IAM_ENV_VARS = new Set([
     'AWS_SESSION_TOKEN',
     'AWS_SECRET_ACCESS_KEY',
     'AWS_ACCESS_KEY_ID',
@@ -73,22 +87,7 @@ const MLUPINE_DOCKER_RUNTIMES = new Set([
     'provided.al2',
 ]);
 
-const WARMUP_REQUEST = {
-    _merloc: {
-        warmup: true,
-    },
-};
-
-const COLORS = [
-    'redBright',
-    'greenBright',
-    'yellowBright',
-    'blueBright',
-    'magentaBright',
-    'cyanBright',
-];
-
-export default class ServerlessLocalInvoker implements Invoker {
+export default class ServerlessLocalInvoker extends BaseInvoker {
     private readonly docker: Docker = new Docker({
         socketPath: '/var/run/docker.sock',
     });
@@ -97,7 +96,9 @@ export default class ServerlessLocalInvoker implements Invoker {
         DockerEnv
     >();
 
-    async _checkAWSLambdaAPIIsUp(dockerEnv: DockerEnv): Promise<boolean> {
+    private async _checkAWSLambdaAPIIsUp(
+        dockerEnv: DockerEnv
+    ): Promise<boolean> {
         const lambdaAPIUrl: string = `http://localhost:${dockerEnv.lambdaAPIPort}/2015-03-31/functions`;
         logger.debug(
             `<ServerlessLocalInvoker> Checking whether AWS Lambda API is up at ${lambdaAPIUrl} ...`
@@ -120,7 +121,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
-    async _destroyDockerEnv(functionName: string) {
+    private async _destroyDockerEnv(functionName: string) {
         logger.debug(
             `<ServerlessLocalInvoker> Destroying Docker environment for function ${functionName} ...`
         );
@@ -154,7 +155,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
-    async _ensureDockerEnvStarted(
+    private async _ensureDockerEnvStarted(
         invocationRequest: InvocationRequest,
         functionName: string
     ): Promise<DockerEnv> {
@@ -162,6 +163,7 @@ export default class ServerlessLocalInvoker implements Invoker {
             this.functionDockerEnvMap.get(functionName);
         if (dockerEnv) {
             const reloadDockerEnv: boolean = this._shouldReloadDockerEnv(
+                functionName,
                 dockerEnv,
                 invocationRequest
             );
@@ -191,27 +193,10 @@ export default class ServerlessLocalInvoker implements Invoker {
 
         if (isDebuggingEnabled()) {
             if (this._isDebuggingSupportedRuntime(dockerEnv.runtime)) {
-                try {
-                    // TODO Warmup and wait of key press only for debugging supported runtimes
-
-                    await this._warmupDockerEnv(functionName, dockerEnv);
-
-                    logger.info(
-                        `You can attach debugger at localhost:${dockerEnv.debugPort}`
-                    );
-                    logger.info(
-                        `You are running in debug mode. ` +
-                            `Put your first breakpoint for function ${functionName} ` +
-                            `and press any key to continue ...`
-                    );
-
-                    await this._waitForKeyPress();
-                } catch (err: any) {
-                    logger.error(
-                        `<ServerlessLocalInvoker> Unable to warmup Docker environment for function ${functionName} to debug`,
-                        err
-                    );
-                }
+                const debugInfo: string = chalk.greenBright(
+                    `localhost:${dockerEnv.debugPort}`
+                );
+                logger.info(`You can attach debugger at ${debugInfo}`);
             } else {
                 logger.warn(
                     `Debugging is not supported for ${dockerEnv.runtime} runtime!`
@@ -224,7 +209,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         return dockerEnv;
     }
 
-    async _findPorts(portCount: number): Promise<number[]> {
+    private async _findPorts(portCount: number): Promise<number[]> {
         let ports: number[] = [];
         for (let i = BASE_PORT; i < MAX_PORT; i++) {
             const status: Status = await portscanner.checkPortStatus(i);
@@ -240,7 +225,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         return [];
     }
 
-    async _getRuntime(
+    private async _getRuntime(
         serverlessService: any,
         functionName: string
     ): Promise<string | undefined> {
@@ -258,7 +243,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
-    _hashCode(s: string): number {
+    private _hashCode(s: string): number {
         return Math.abs(
             s.split('').reduce((a: number, b: string) => {
                 const x: number = (a << 5) - a + b.charCodeAt(0);
@@ -267,7 +252,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         );
     }
 
-    async _initRuntimeContainer(
+    private async _initRuntimeContainer(
         functionName: string,
         dockerEnv: DockerEnv,
         envId: string
@@ -354,21 +339,26 @@ export default class ServerlessLocalInvoker implements Invoker {
         });
     }
 
-    _isDebuggingSupportedRuntime(runtime: string): boolean {
-        if (runtime.startsWith('nodejs')) {
+    private _isDebuggingSupportedRuntime(runtime: string): boolean {
+        if (runtime.startsWith('nodejs') || runtime.startsWith('java')) {
             return true;
         } else {
             return false;
         }
     }
 
-    _formatFunctionName(name: string): string {
-        const color: string = COLORS[this._hashCode(name) % COLORS.length];
+    private _formatFunctionName(name: string): string {
+        const color: string =
+            FUNCTION_LOG_COLORS[
+                this._hashCode(name) % FUNCTION_LOG_COLORS.length
+            ];
         // @ts-ignore
         return chalk[color].inverse(` ${name} `);
     }
 
-    _getFunctionDockerArgs(invocationRequest: InvocationRequest): string[] {
+    private _getFunctionDockerArgs(
+        invocationRequest: InvocationRequest
+    ): string[] {
         const functionEnvVars = [];
         for (let [envVarName, envVarValue] of Object.entries(
             invocationRequest.envVars || []
@@ -381,7 +371,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         return functionEnvVars;
     }
 
-    _getRuntimeDockerArgs(
+    private _getRuntimeDockerArgs(
         runtime: string | undefined,
         debugPort: number
     ): string[] {
@@ -404,15 +394,17 @@ export default class ServerlessLocalInvoker implements Invoker {
                     '-e',
                     `AWS_LAMBDA_EXEC_WRAPPER=${MERLOC_HELPERS_BASE_PATH}node/wrapper`
                 );
-                if (isDebuggingEnabled()) {
+                runtimeArgs.push(
+                    '-e',
+                    `NODE_OPTIONS=-r ${MERLOC_HELPERS_BASE_PATH}node/bootstrap.js`
+                );
+            }
+
+            if (isDebuggingEnabled()) {
+                if (runtime.startsWith('java')) {
                     runtimeArgs.push(
                         '-e',
-                        `NODE_OPTIONS=--inspect=0.0.0.0:${DOCKER_INTERNAL_DEBUG_PORT} -r ${MERLOC_HELPERS_BASE_PATH}node/bootstrap.js`
-                    );
-                } else {
-                    runtimeArgs.push(
-                        '-e',
-                        `NODE_OPTIONS=-r ${MERLOC_HELPERS_BASE_PATH}node/bootstrap.js`
+                        `_JAVA_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=${DOCKER_INTERNAL_DEBUG_PORT} -Xshare:off`
                     );
                 }
             }
@@ -420,7 +412,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         return runtimeArgs;
     }
 
-    async _getServerlessFunctionName(
+    private async _getServerlessFunctionName(
         invocationRequest: InvocationRequest,
         serverlessService: any
     ): Promise<string> {
@@ -453,7 +445,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         return invocationRequest.functionName;
     }
 
-    _getSLSOptions(): string[] | undefined {
+    private _getSLSOptions(): string[] | undefined {
         const slsOptions: string = getSLSOptions();
         if (slsOptions) {
             return slsOptions?.split(/\s+/);
@@ -462,7 +454,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
-    async _mapRuntimeDockerImage(runtime: string) {
+    private async _mapRuntimeDockerImage(runtime: string) {
         logger.debug(
             `<ServerlessLocalInvoker> Mapping Docker image for runtime: ${runtime} ...`
         );
@@ -506,7 +498,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         });
     }
 
-    _outputLog(functionName: string, line: string) {
+    private _outputLog(functionName: string, line: string) {
         const trimmedLine: string = line.replace(/\n+$/, '');
         if (trimmedLine === '') {
             return;
@@ -514,7 +506,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         console.log(this._formatFunctionName(functionName), trimmedLine);
     }
 
-    _processRequest(
+    private _processRequest(
         dockerEnv: DockerEnv,
         invocationRequest: InvocationRequest,
         headers: AxiosRequestHeaders
@@ -543,7 +535,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
-    async _pullRuntimeDockerImage(runtime: string) {
+    private async _pullRuntimeDockerImage(runtime: string) {
         logger.debug(
             `<ServerlessLocalInvoker> Pulling Docker image for runtime: ${runtime} ...`
         );
@@ -581,7 +573,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         });
     }
 
-    async _resolveServerlessService(): Promise<any | undefined> {
+    private async _resolveServerlessService(): Promise<any | undefined> {
         logger.debug('<ServerlessLocalInvoker> Resolving "serverless.yml" ...');
         try {
             const slsPrintPromise = new Promise<string | undefined>(
@@ -681,7 +673,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
-    async _setupBootstrap(
+    private async _setupBootstrap(
         functionName: string,
         dockerEnv: DockerEnv,
         container: Docker.Container
@@ -723,7 +715,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         });
     }
 
-    async _setupLayers(
+    private async _setupLayers(
         functionName: string,
         dockerEnv: DockerEnv,
         container: Docker.Container
@@ -802,7 +794,8 @@ export default class ServerlessLocalInvoker implements Invoker {
         return Promise.all(promises);
     }
 
-    _shouldReloadDockerEnv(
+    private _shouldReloadDockerEnv(
+        functionName: string,
         dockerEnv: DockerEnv,
         invocationRequest: InvocationRequest
     ): boolean {
@@ -811,24 +804,57 @@ export default class ServerlessLocalInvoker implements Invoker {
             // Because, we are able to update env vars via wrapper handler.
             return false;
         }
-        for (let envVar of FUNCTION_ENV_VARS_TO_TRIGGER_RELOAD) {
+
+        /*
+        Reloading function Docker environment at every AWS IAM credential check
+        is too aggressive as it might cause lots of cold start on local
+        (for ex: invocations coming from different Lambda containers on remote).
+        */
+
+        let credentialsAreChanged = false;
+
+        for (let envVar of FUNCTION_AWS_IAM_ENV_VARS) {
             if (
                 dockerEnv.functionEnvVars[envVar] !=
                 invocationRequest.envVars[envVar]
             ) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                        `<ServerlessLocalInvoker> Docker environment for function ${invocationRequest.functionName} ` +
-                            `should be reloaded because of changed environment variable ${envVar}`
-                    );
-                }
-                return true;
+                credentialsAreChanged = true;
+                break;
             }
         }
-        return false;
+
+        if (!credentialsAreChanged) {
+            return false;
+        }
+
+        logger.debug(
+            `<SAMLocalInvoker> AWS IAM credentials for function ${invocationRequest.functionName} were changed`
+        );
+
+        const currentTime: number = Date.now();
+
+        // Check whether init times are set
+        if (dockerEnv.initTime && invocationRequest.initTime) {
+            // If credentials might be expired and the received invocation has newer credentials,
+            // to switch to newer credentials, reload Docker environment.
+            if (
+                currentTime - dockerEnv.initTime > CREDENTIALS_EXPIRE_TIME &&
+                invocationRequest.initTime > dockerEnv.initTime
+            ) {
+                logger.debug(
+                    `<SAMLocalInvoker> Docker environment for function ${invocationRequest.functionName} ` +
+                        `should be reloaded because of possibly expired AWS IAM credentials`
+                );
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    async _startDockerEnv(
+    private async _startDockerEnv(
         invocationRequest: InvocationRequest,
         functionName: string
     ): Promise<DockerEnv> {
@@ -927,6 +953,7 @@ export default class ServerlessLocalInvoker implements Invoker {
             initialized: false,
             closed: false,
             runtime,
+            initTime: invocationRequest.initTime,
             functionEnvVars: invocationRequest.envVars,
         };
         this.functionDockerEnvMap.set(functionName, dockerEnv);
@@ -970,7 +997,7 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
-    async _tailLogs(
+    private async _tailLogs(
         functionName: string,
         dockerEnv: DockerEnv,
         container: Docker.Container
@@ -1024,35 +1051,9 @@ export default class ServerlessLocalInvoker implements Invoker {
         });
     }
 
-    async _warmupDockerEnv(functionName: string, dockerEnv: DockerEnv) {
-        const lambdaAPIUrl: string = `http://localhost:${dockerEnv.lambdaAPIPort}/2015-03-31/functions/${functionName}/invocations`;
-
-        logger.debug(
-            `<ServerlessLocalInvoker> Sending warmup request for function ${functionName}) ...`
-        );
-
-        await axios.post(lambdaAPIUrl, WARMUP_REQUEST);
-
-        logger.debug(
-            `<ServerlessLocalInvoker> Sent warmup request for function ${functionName})`
-        );
-    }
-
-    async _waitForKeyPress() {
-        logger.debug('<ServerlessLocalInvoker> Waiting for key press ...');
-
-        const raw = process.stdin.isRaw;
-        process.stdin.setRawMode(true);
-        return new Promise<void>((resolve) =>
-            process.stdin.once('data', () => {
-                process.stdin.setRawMode(raw);
-                resolve();
-                logger.debug('<ServerlessLocalInvoker> Received key press');
-            })
-        );
-    }
-
-    async _waitUntilAWSLambdaAPIIsUp(dockerEnv: DockerEnv): Promise<boolean> {
+    private async _waitUntilAWSLambdaAPIIsUp(
+        dockerEnv: DockerEnv
+    ): Promise<boolean> {
         const waitDeadline: number = Date.now() + MAX_LAMBDA_API_UP_WAIT_TIME;
         while (Date.now() < waitDeadline) {
             if (dockerEnv.closed) {
@@ -1163,23 +1164,39 @@ export default class ServerlessLocalInvoker implements Invoker {
         }
     }
 
+    async init(): Promise<void> {
+        logger.debug('<ServerlessLocalInvoker> Initializing ...');
+
+        await this._runCommand(getSLSInitCommand());
+
+        logger.debug('<ServerlessLocalInvoker> Initialized');
+    }
+
     async reload(): Promise<void> {
         logger.debug('<ServerlessLocalInvoker> Reloading ...');
+
+        await this._runCommand(getSLSReloadCommand());
+
         for (let functionName of this.functionDockerEnvMap.keys()) {
             logger.debug(
                 `<ServerlessLocalInvoker> Reloading function ${functionName} ...`
             );
             await this._destroyDockerEnv(functionName);
         }
+
+        logger.debug('<ServerlessLocalInvoker> Reloaded');
     }
 
     async destroy(): Promise<void> {
         logger.debug('<ServerlessLocalInvoker> Destroying ...');
+
         for (let functionName of this.functionDockerEnvMap.keys()) {
             logger.debug(
                 `<ServerlessLocalInvoker> Destroying function ${functionName} ...`
             );
             await this._destroyDockerEnv(functionName);
         }
+
+        logger.debug('<ServerlessLocalInvoker> Destroyed');
     }
 }

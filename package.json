@@ -19,11 +19,15 @@
         "merloc"
     ],
     "scripts": {
-        "build": "tsc && cp -r helpers dist/",
+        "build": "tsc && cp package.json dist/ && cp -r helpers dist/",
         "start": "ts-node -O \"{\\\"module\\\":\\\"commonjs\\\"}\" ./src/index.ts",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint-check": "prettier --config .prettierrc.json --check ./src/*.ts ./src/**/*.ts",
-        "lint-format": "prettier --config .prettierrc.json --write ./src/*.ts ./src/**/*.ts"
+        "lint-format": "prettier --config .prettierrc.json --write ./src/*.ts ./src/**/*.ts",
+        "release-patch": "release-it --ci --git.commit --git.push --git.tag --git.tagName='v${version}' --github.release --no-git.requireCleanWorkingDir --no-git.requireUpstream --npm.publish --npm.skipChecks",
+        "release-minor": "release-it minor --ci --git.commit --git.push --git.tag --git.tagName='v${version}' --github.release --no-git.requireCleanWorkingDir --no-git.requireUpstream --npm.publish --npm.skipChecks",
+        "release-major": "release-it major --ci --git.commit --git.push --git.tag --git.tagName='v${version}' --github.release --no-git.requireCleanWorkingDir --no-git.requireUpstream --npm.publish --npm.skipChecks",
+        "release-minor-without-tag": "release-it minor --ci --no-git.commit --no-git.push --no-git.tag --no-git.tagName='v${version}' --no-github.release --no-git.requireCleanWorkingDir --no-git.requireUpstream --npm.publish --npm.skipChecks"
     },
     "files": [
         "dist/",
@@ -39,6 +43,8 @@
         "@types/dockerode": "^3.3.11",
         "@types/node": "^14.11.8",
         "@types/portscanner": "^2.1.1",
+        "@types/rwlock": "^5.0.3",
+        "@types/tmp": "^0.2.3",
         "@types/uuid": "^8.3.4",
         "@types/ws": "^8.5.3",
         "@typescript-eslint/eslint-plugin": "^5.10.1",
@@ -48,6 +54,7 @@
         "eslint-config-airbnb-typescript": "^16.1.0",
         "eslint-plugin-import": "^2.25.4",
         "prettier": "^2.2.1",
+        "release-it": "^15.5.0",
         "ts-node": "^10.9.1",
         "typescript": "^4.8.4"
     },
@@ -61,6 +68,8 @@
         "cross-spawn": "^7.0.3",
         "dockerode": "^3.3.4",
         "portscanner": "^2.2.0",
+        "rwlock": "^5.0.0",
+        "tmp": "^0.2.1",
         "uuid": "^9.0.0",
         "ws": "^8.9.0"
     }

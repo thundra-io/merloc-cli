@@ -9,7 +9,8 @@ import {
     getBrokerURL,
     getBrokerConnectionName,
     isReloadEnabled,
-    getWatchPath,
+    getWatchPaths,
+    getAPIKey,
 } from './configs';
 import * as logger from './logger';
 import BrokerClient, { MessageListener } from './client/BrokerClient';
@@ -17,7 +18,7 @@ import BrokerMessage from './domain/BrokerMessage';
 import MessageHandlers from './handler';
 import MessageHandler from './handler/MessageHandler';
 import { CLIENT_CONNECTION_TYPE } from './constants';
-import InvokeManager from './invoke/InvokeManager';
+import RuntimeManager from './invoke/RuntimeManager';
 import BrokerResponse from './domain/BrokerResponse';
 
 const DEFAULT_FILES_NOT_TO_WATCH = [
@@ -25,6 +26,7 @@ const DEFAULT_FILES_NOT_TO_WATCH = [
     '**/.vscode/**',
     '**/.github/**',
     '**/.serverless/**',
+    '**/.aws-sam/**',
     '**/.build/**',
     '**/.*',
     '**/*.json',
@@ -63,7 +65,7 @@ class BrokerMessageListener implements MessageListener {
                         id: uuidv4(),
                         responseOf: message.id,
                         type: response.type,
-                        connectionName: getBrokerConnectionName(),
+                        connectionName: brokerClient.getFullConnectionName(),
                         sourceConnectionId: message.targetConnectionId,
                         sourceConnectionType: CLIENT_CONNECTION_TYPE,
                         targetConnectionId: message.sourceConnectionId,
@@ -86,6 +88,14 @@ const brokerURL: string | undefined = getBrokerURL();
 const brokerMessageListener: BrokerMessageListener =
     new BrokerMessageListener();
 
+async function _initInvoker(): Promise<void> {
+    logger.debug('<index> Initializing invoker ...');
+
+    await RuntimeManager.init();
+
+    logger.debug('<index> Initialized invoker');
+}
+
 async function _initBroker(): Promise<BrokerClient | undefined> {
     logger.debug('<index> Initializing broker ...');
 
@@ -94,6 +104,7 @@ async function _initBroker(): Promise<BrokerClient | undefined> {
         const client: BrokerClient = new BrokerClient(
             brokerURL!,
             getBrokerConnectionName(),
+            getAPIKey(),
             brokerMessageListener
         );
         logger.debug('<index> Created broker client');
@@ -101,22 +112,20 @@ async function _initBroker(): Promise<BrokerClient | undefined> {
         client
             .connect()
             .then(() => {
-                logger.debug('<index> Connected to broker');
+                logger.debug(`<index> Connected to broker`);
+                logger.info('Connected to broker');
                 res(client);
-                logger.info('Connected to broker. MerLoc is ready!');
             })
             .catch((err: Error) => {
                 logger.error('<index> Unable to connect to broker', err);
-                res(undefined);
-                logger.error(
-                    `Unable to connect to broker (${err.name}: ${err.message}). Terminating MerLoc`
-                );
-                process.exit(1);
+                rej(new Error(`Unable to connect to broker: ${err.message}`));
             });
     });
 }
 
 function _initKeyListener() {
+    logger.debug('<index> Initializing key listener ...');
+
     readline.emitKeypressEvents(process.stdin);
 
     // Listen for the "keypress" event
@@ -125,23 +134,29 @@ function _initKeyListener() {
         process.stdout.write(character);
         if (key && key.ctrl && key.name == 'c') {
             try {
-                await InvokeManager.destroy();
+                logger.info('Destroying ...');
+                await RuntimeManager.destroy();
             } finally {
                 process.exit();
             }
         } else if (key && key.ctrl && key.name == 'r') {
-            await InvokeManager.reload();
+            logger.info('Reloading ...');
+            await RuntimeManager.reload();
+            logger.info('Reloaded');
         }
     });
 
     process.stdin.setRawMode(true);
     process.stdin.resume();
+
+    logger.debug('<index> Initialized key listener');
 }
 
-function _initWatch() {
+function _initWatcher() {
     if (isReloadEnabled()) {
+        logger.debug('<index> Initializing watcher for hot-reload ...');
         chokidar
-            .watch(getWatchPath(), {
+            .watch(getWatchPaths(), {
                 ignored: DEFAULT_FILES_NOT_TO_WATCH,
                 ignoreInitial: true,
             })
@@ -149,24 +164,46 @@ function _initWatch() {
                 if (logger.isDebugEnabled()) {
                     logger.debug(`<index> Detected file add: ${path}`);
                 }
-                await InvokeManager.reload();
+                logger.info('Reloading ...');
+                await RuntimeManager.reload();
+                logger.info('Reloaded');
             })
             .on('change', async (path: string) => {
                 if (logger.isDebugEnabled()) {
                     logger.debug(`<index> Detected file change: ${path}`);
                 }
-                await InvokeManager.reload();
+                logger.info('Reloading ...');
+                await RuntimeManager.reload();
+                logger.info('Reloaded');
             });
+
+        logger.debug('<index> Initialized watcher for hot-reload');
+    }
+}
+
+async function _init() {
+    try {
+        logger.info('Initializing, wait ...');
+
+        await _initInvoker();
+
+        await _initBroker();
+
+        await _initKeyListener();
+
+        await _initWatcher();
+
+        logger.info('Initialization completed. MerLoc is ready!');
+    } catch (err: any) {
+        logger.error('<index> Unable to initialize', err);
+
+        process.exit(1);
     }
 }
 
 if (!brokerURL) {
-    logger.warn('<index> No broker URL is configured. So exiting');
+    logger.warn('No broker URL is configured. So exiting');
     process.exit(1);
 }
 
-_initBroker();
-
-_initKeyListener();
-
-_initWatch();
+_init();

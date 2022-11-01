@@ -20,7 +20,7 @@ function _timeAsString(): string {
 export function debug(...args: any[]): void {
     if (isDebugEnabled()) {
         console.debug(
-            chalk.bgGreenBright('[MERLOC-LOCAL]'),
+            chalk.bgGreenBright('[MERLOC]'),
             _timeAsString(),
             '|',
             chalk.blue('DEBUG'),
@@ -32,7 +32,7 @@ export function debug(...args: any[]): void {
 
 export function info(...args: any[]): void {
     console.info(
-        chalk.bgGreenBright('[MERLOC-LOCAL]'),
+        chalk.bgGreenBright('[MERLOC]'),
         _timeAsString(),
         '|',
         chalk.green('INFO '),
@@ -43,7 +43,7 @@ export function info(...args: any[]): void {
 
 export function warn(...args: any[]): void {
     console.warn(
-        chalk.bgGreenBright('[MERLOC-LOCAL]'),
+        chalk.bgGreenBright('[MERLOC]'),
         _timeAsString(),
         '|',
         chalk.yellow('WARN '),
@@ -54,7 +54,7 @@ export function warn(...args: any[]): void {
 
 export function error(...args: any[]): void {
     console.error(
-        chalk.bgGreenBright('[MERLOC-LOCAL]'),
+        chalk.bgGreenBright('[MERLOC]'),
         _timeAsString(),
         '|',
         chalk.red('ERROR'),

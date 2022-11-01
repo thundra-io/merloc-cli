@@ -6,6 +6,7 @@ import InvocationRequest from '../domain/InvocationRequest';
 import InvocationResponse from '../domain/InvocationResponse';
 import { INVOKER_NAMES } from '../constants';
 import ServerlessLocalInvoker from './ServerlessLocalInvoker';
+import SAMLocalInvoker from './SAMLocalInvoker';
 
 export default class AutoLocalInvoker implements Invoker {
     private invoker: Invoker;
@@ -17,6 +18,8 @@ export default class AutoLocalInvoker implements Invoker {
     private static _createDefaultInvoker(): Invoker {
         if (fs.existsSync('./serverless.yml')) {
             return new ServerlessLocalInvoker();
+        } else if (fs.existsSync('./template.yml')) {
+            return new SAMLocalInvoker();
         }
         logger.error(
             'Unable to detect default invoker. Consider specifying invoker by options. So exiting now'
@@ -41,13 +44,21 @@ export default class AutoLocalInvoker implements Invoker {
         return this.invoker.invoke(invocationRequest);
     }
 
+    async init(): Promise<void> {
+        logger.debug('<AutoLocalInvoker> Initializing ...');
+        await this.invoker.init();
+        logger.debug('<AutoLocalInvoker> Initialized');
+    }
+
     async reload(): Promise<void> {
         logger.debug('<AutoLocalInvoker> Reloading ...');
-        return this.invoker.reload();
+        await this.invoker.reload();
+        logger.debug('<AutoLocalInvoker> Reloaded');
     }
 
     async destroy(): Promise<void> {
         logger.debug('<AutoLocalInvoker> Destroying ...');
-        return this.invoker.destroy();
+        await this.invoker.destroy();
+        logger.debug('<AutoLocalInvoker> Destroyed');
     }
 }

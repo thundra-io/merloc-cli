@@ -1,7 +1,7 @@
 import * as logger from '../logger';
 import MessageHandler from './MessageHandler';
 import InvocationRequest from '../domain/InvocationRequest';
-import InvokeManager from '../invoke/InvokeManager';
+import RuntimeManager from '../invoke/RuntimeManager';
 import InvocationResponse from '../domain/InvocationResponse';
 import BrokerResponse from '../domain/BrokerResponse';
 import { MESSAGE_TYPES } from '../constants';
@@ -21,7 +21,7 @@ export default class InvocationMessageHandler
             );
         }
         const invocationResponse: InvocationResponse =
-            await InvokeManager.invoke(invocationRequest);
+            await RuntimeManager.invoke(invocationRequest);
         if (logger.isDebugEnabled()) {
             logger.debug(
                 `<InvocationMessageHandler> Handled invocation response: ${logger.toJson(
@@ -34,7 +34,9 @@ export default class InvocationMessageHandler
                 type: invocationResponse.error
                     ? MESSAGE_TYPES.CLIENT_ERROR
                     : MESSAGE_TYPES.CLIENT_RESPONSE,
-                data: invocationResponse.response,
+                data: invocationResponse.response
+                    ? { response: invocationResponse.response }
+                    : undefined,
                 error: invocationResponse.error,
             };
         }

@@ -2,10 +2,12 @@ export const BROKER_CONNECTION_TYPE = 'gatekeeper';
 export const CLIENT_CONNECTION_TYPE = 'client';
 export const GATEKEEPER_CONNECTION_TYPE = 'gatekeeper';
 
-export const CLIENT_CONNECTION_NAME_PREFIX = 'client::';
-export const GATEKEEPER_CONNECTION_NAME_PREFIX = 'gatekeeper::';
-
-export const DEFAULT_CLIENT_BROKER_CONNECTION_NAME = 'default';
+export const CONNECTION_TYPE_SEPARATOR = '::';
+export const CONNECTION_API_KEY_SEPARATOR = '##';
+export const CONNECTION_NAME_HEADER_NAME = 'x-api-key';
+export const DEFAULT_CONNECTION_NAME = 'default';
+export const CLIENT_CONNECTION_NAME_PREFIX = `client${CONNECTION_TYPE_SEPARATOR}`;
+export const GATEKEEPER_CONNECTION_NAME_PREFIX = `gatekeeper::${CONNECTION_TYPE_SEPARATOR}`;
 
 export const MESSAGE_TYPES = {
     CLIENT_PING: 'client.ping',
@@ -38,6 +40,16 @@ export const AWS_LAMBDA_ENV_VARS = {
 };
 
 export const ERROR_TYPES = {
+    RUNTIME_NOT_ACTIVE: 'RuntimeNotActiveError',
     RUNTIME_IN_USE: 'RuntimeInUseError',
     FUNCTION_IN_USE: 'FunctionInUseError',
 };
+
+export const FUNCTION_LOG_COLORS = [
+    'redBright',
+    'greenBright',
+    'yellowBright',
+    'blueBright',
+    'magentaBright',
+    'cyanBright',
+];

@@ -1,6 +1,7 @@
 import { ClientContext, CognitoIdentity } from 'aws-lambda';
 
 export type InvocationRequest = {
+    initTime: number;
     region: string;
     requestId: string;
     handler: string;
