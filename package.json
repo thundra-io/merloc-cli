@@ -1,6 +1,6 @@
 {
     "name": "merloc-local",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "MerLoc local CLI tool to manage communication between MerLoc broker and local AWS Lambda runners",
     "author": "Serkan Özal <serkan@thundra.io> (https://github.com/serkan-ozal)",
     "homepage": "https://github.com/thundra-io/merloc-local",
