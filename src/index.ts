@@ -79,7 +79,7 @@ class BrokerMessageListener implements MessageListener {
                 logger.debug(`<index> Unknown message type: ${message.type}`);
             }
         } catch (err: any) {
-            logger.error('<index> Error occurred while handling message', err);
+            logger.error('<index> Error occurred while handling message:', err);
         }
     }
 }
@@ -117,7 +117,7 @@ async function _initBroker(): Promise<BrokerClient | undefined> {
                 res(client);
             })
             .catch((err: Error) => {
-                logger.error('<index> Unable to connect to broker', err);
+                logger.error('<index> Unable to connect to broker:', err);
                 rej(new Error(`Unable to connect to broker: ${err.message}`));
             });
     });
@@ -195,7 +195,7 @@ async function _init() {
 
         logger.info('Initialization completed. MerLoc is ready!');
     } catch (err: any) {
-        logger.error('<index> Unable to initialize', err);
+        logger.error('<index> Unable to initialize:', err);
 
         process.exit(1);
     }

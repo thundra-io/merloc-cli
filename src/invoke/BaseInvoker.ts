@@ -42,7 +42,7 @@ export default abstract class BaseInvoker implements Invoker {
                 res();
             });
             cmdProc.on('error', (err: Error) => {
-                logger.error(`<BaseInvoker> Unable to run "${cmd}"`, err);
+                logger.error(`<BaseInvoker> Unable to run "${cmd}:"`, err);
                 rej(new Error(`Unable to run "${cmd}": ${err.message}`));
             });
         });

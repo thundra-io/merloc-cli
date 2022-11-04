@@ -137,7 +137,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                     );
                 } catch (err: any) {
                     logger.error(
-                        `<ServerlessLocalInvoker> Unable to kill container of Docker environment for function ${functionName}: ${dockerEnv.container.id}`,
+                        `<ServerlessLocalInvoker> Unable to kill container (id=${dockerEnv.container.id}) of Docker environment for function ${functionName}:`,
                         err
                     );
                 }
@@ -266,7 +266,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
             ) {
                 if (err) {
                     logger.error(
-                        '<ServerlessLocalInvoker> Unable to list containers',
+                        '<ServerlessLocalInvoker> Unable to list containers:',
                         err
                     );
                     rej(new Error(`Unable to list containers: ${err.message}`));
@@ -290,7 +290,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                         async (err: Error, info: ContainerInspectInfo) => {
                             if (err) {
                                 logger.error(
-                                    `<ServerlessLocalInvoker> Unable to inspect container with id: ${containerInfo.Id}`,
+                                    `<ServerlessLocalInvoker> Unable to inspect container with id ${containerInfo.Id}:`,
                                     err
                                 );
                                 rej(
@@ -486,7 +486,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
             });
             dockerPullProc.on('error', (err: Error) => {
                 logger.error(
-                    `<ServerlessLocalInvoker> Unable to map Docker image for runtime: ${runtime}`,
+                    `<ServerlessLocalInvoker> Unable to map Docker image for runtime ${runtime}:`,
                     err
                 );
                 rej(
@@ -561,7 +561,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
             });
             dockerPullProc.on('error', (err: Error) => {
                 logger.error(
-                    `<ServerlessLocalInvoker> Unable to pull Docker image for runtime: ${runtime}`,
+                    `<ServerlessLocalInvoker> Unable to pull Docker image for runtime ${runtime}:`,
                     err
                 );
                 rej(
@@ -609,7 +609,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                     });
                     slsPrintProc.on('error', (err: Error) => {
                         logger.error(
-                            '<ServerlessLocalInvoker> Unable to resolve "serverless.yml',
+                            '<ServerlessLocalInvoker> Unable to resolve "serverless.yml":',
                             err
                         );
                         rej(
@@ -703,7 +703,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
             });
             dockerCopyProc.on('error', (err: Error) => {
                 logger.error(
-                    `<ServerlessLocalInvoker> Unable to setup up bootstrap for function ${functionName} in Docker container ${container.id}`,
+                    `<ServerlessLocalInvoker> Unable to setup up bootstrap for function ${functionName} in Docker container ${container.id}:`,
                     err
                 );
                 rej(
@@ -774,7 +774,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                                     );
                                     dockerCopyProc.on('error', (err: Error) => {
                                         logger.error(
-                                            `<ServerlessLocalInvoker> Unable to setup up layers for function ${functionName} in Docker container ${container.id}`,
+                                            `<ServerlessLocalInvoker> Unable to setup layers for function ${functionName} in Docker container ${container.id}:`,
                                             err
                                         );
                                         rej(
@@ -962,7 +962,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
             this.functionDockerEnvMap.delete(functionName);
             dockerEnv.closed = true;
             logger.error(
-                `<ServerlessLocalInvoker> Failed to start Docker environment for function ${functionName}`,
+                `<ServerlessLocalInvoker> Failed to start Docker environment for function ${functionName}:`,
                 err
             );
         });
@@ -1024,7 +1024,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                 (err, stream) => {
                     if (err) {
                         logger.error(
-                            `<ServerlessLocalInvoker> Unable to tail logs of container (id=${container.id}) for environment of function ${functionName}`,
+                            `<ServerlessLocalInvoker> Unable to tail logs of container (id=${container.id}) for environment of function ${functionName}:`,
                             err
                         );
                         rej(
@@ -1149,7 +1149,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
             }
         } catch (err: any) {
             logger.error(
-                `<ServerlessLocalInvoker> Error occurred while handling invocation request for function ${functionName}`,
+                `<ServerlessLocalInvoker> Error occurred while handling invocation request for function ${functionName}:`,
                 err
             );
             return {

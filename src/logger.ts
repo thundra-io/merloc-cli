@@ -17,6 +17,23 @@ function _timeAsString(): string {
     })}`;
 }
 
+function _normalizeArgs(...args: any[]): any[] {
+    if (isDebugEnabled()) {
+        return args;
+    } else {
+        return (args || []).map((arg) => {
+            if (
+                arg instanceof Error ||
+                (arg.name && arg.message && arg.stack)
+            ) {
+                return `${arg.name}: ${arg.message}`;
+            } else {
+                return arg;
+            }
+        });
+    }
+}
+
 export function debug(...args: any[]): void {
     if (isDebugEnabled()) {
         console.debug(
@@ -25,7 +42,7 @@ export function debug(...args: any[]): void {
             '|',
             chalk.blue('DEBUG'),
             '-',
-            ...args
+            ..._normalizeArgs(...args)
         );
     }
 }
@@ -37,7 +54,7 @@ export function info(...args: any[]): void {
         '|',
         chalk.green('INFO '),
         '-',
-        ...args
+        ..._normalizeArgs(...args)
     );
 }
 
@@ -48,7 +65,7 @@ export function warn(...args: any[]): void {
         '|',
         chalk.yellow('WARN '),
         '-',
-        ...args
+        ..._normalizeArgs(...args)
     );
 }
 
@@ -59,7 +76,7 @@ export function error(...args: any[]): void {
         '|',
         chalk.red('ERROR'),
         '-',
-        ...args
+        ..._normalizeArgs(...args)
     );
 }
 

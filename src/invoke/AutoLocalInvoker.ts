@@ -22,7 +22,7 @@ export default class AutoLocalInvoker implements Invoker {
             return new SAMLocalInvoker();
         }
         logger.error(
-            'Unable to detect default invoker. Consider specifying invoker by options. So exiting now'
+            'Unable to detect default invoker. Consider specifying invoker by options. So exiting now ...'
         );
         process.exit(1);
     }
