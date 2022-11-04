@@ -5,6 +5,9 @@ import spawn from 'cross-spawn';
 import axios, { AxiosError, AxiosRequestHeaders, AxiosResponse } from 'axios';
 import tmp, { FileResult } from 'tmp';
 import chalk from 'chalk';
+import { fromIni } from '@aws-sdk/credential-providers';
+import { CredentialProvider } from '@aws-sdk/types';
+import { Credentials } from '@aws-sdk/types/dist-types/credentials';
 
 import BaseInvoker from './BaseInvoker';
 import * as logger from '../logger';
@@ -67,6 +70,35 @@ export default class SAMLocalInvoker extends BaseInvoker {
         string,
         DockerEnv
     >();
+
+    private async _checkAndGetDefaultAWSProfile(): Promise<string | undefined> {
+        try {
+            logger.debug(
+                '<SAMLocalInvoker> Checking whether "default" AWS profile is exist ...'
+            );
+            const credentialProvider: CredentialProvider = fromIni({
+                profile: 'default',
+            });
+            const credentials: Credentials = await credentialProvider();
+            if (
+                credentials &&
+                credentials.accessKeyId &&
+                credentials.secretAccessKey
+            ) {
+                logger.debug(
+                    '<SAMLocalInvoker> "default" AWS profile is exist'
+                );
+                return 'default';
+            }
+        } catch (err: any) {
+            logger.debug(
+                '<SAMLocalInvoker> Unable to get "default" AWS profile',
+                err
+            );
+        }
+        logger.debug('<SAMLocalInvoker> "default" AWS profile is not exist');
+        return undefined;
+    }
 
     private async _checkAWSLambdaAPIIsUp(
         dockerEnv: DockerEnv
@@ -371,10 +403,19 @@ export default class SAMLocalInvoker extends BaseInvoker {
             );
         }
 
+        const profile: string | undefined =
+            process.env.AWS_PROFILE ||
+            process.env.AWS_DEFAULT_PROFILE ||
+            (await this._checkAndGetDefaultAWSProfile());
+        const region: string = invocationRequest.region;
+
         const samArgs: string[] = [
             'local',
             'start-lambda',
             ...(samOptions || []),
+            ...(profile ? ['--profile', profile] : []),
+            '--region',
+            region,
             '--warm-containers',
             'LAZY',
             '--env-vars',
@@ -426,7 +467,7 @@ export default class SAMLocalInvoker extends BaseInvoker {
             this.functionDockerEnvMap.delete(functionName);
             dockerEnv.closed = true;
             logger.error(
-                `<SAMLocalInvoker> Failed to start Docker environment for function ${functionName}`,
+                `<SAMLocalInvoker> Failed to start Docker environment for function ${functionName}:`,
                 err
             );
         });
@@ -574,7 +615,7 @@ export default class SAMLocalInvoker extends BaseInvoker {
             }
         } catch (err: any) {
             logger.error(
-                `<SAMLocalInvoker> Error occurred while handling invocation request for function ${samFunctionName}`,
+                `<SAMLocalInvoker> Error occurred while handling invocation request for function ${samFunctionName}:`,
                 err
             );
             return {
