@@ -141,6 +141,17 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                         err
                     );
                 }
+                try {
+                    await dockerEnv.container.remove();
+                    logger.debug(
+                        `<ServerlessLocalInvoker> Container of Docker environment for function ${functionName} has been removed: ${dockerEnv.container.id}`
+                    );
+                } catch (err: any) {
+                    logger.error(
+                        `<ServerlessLocalInvoker> Unable to remove container (id=${dockerEnv.container.id}) of Docker environment for function ${functionName}:`,
+                        err
+                    );
+                }
             }
             if (dockerEnv.process) {
                 const killed: boolean = dockerEnv.process.kill('SIGTERM');

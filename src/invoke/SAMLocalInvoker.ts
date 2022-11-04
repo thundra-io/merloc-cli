@@ -4,6 +4,7 @@ import portscanner, { Status } from 'portscanner';
 import spawn from 'cross-spawn';
 import axios, { AxiosError, AxiosRequestHeaders, AxiosResponse } from 'axios';
 import tmp, { FileResult } from 'tmp';
+import { v4 as uuidv4 } from 'uuid';
 import chalk from 'chalk';
 import { fromIni } from '@aws-sdk/credential-providers';
 import { CredentialProvider } from '@aws-sdk/types';
@@ -24,9 +25,11 @@ import {
     getSAMReloadCommand,
     isDebuggingEnabled,
 } from '../configs';
+import Docker, { ContainerInspectInfo } from 'dockerode';
 
 type DockerEnv = {
     process: child_process.ChildProcess;
+    envId: string;
     lambdaAPIPort: number;
     debugPort: number;
     initialized: boolean;
@@ -40,6 +43,7 @@ const MAX_PORT = 65536;
 const MAX_LAMBDA_API_UP_WAIT_TIME = 60 * 1000; // 1 minute
 const CREDENTIALS_EXPIRE_TIME = 60 * 60 * 1000; // 1 hour
 const MERLOC_BROKER_URL_ENV_VAR_NAME = 'MERLOC_BROKER_URL';
+const MERLOC_ENV_ID_ENV_VAR_NAME = 'MERLOC_ENV_ID';
 const MERLOC_SAM_FUNCTION_NAME_ENV_VAR_NAME = 'MERLOC_SAM_FUNCTION_NAME';
 const FUNCTION_ERROR_HEADER_NAME = 'x-amz-function-error';
 const FUNCTION_ENV_VARS_TO_IGNORE = new Set([
@@ -66,6 +70,9 @@ const INVOCATION_LOG_PREFIXES_TO_HIGHLIGHT = [
 tmp.setGracefulCleanup();
 
 export default class SAMLocalInvoker extends BaseInvoker {
+    private readonly docker: Docker = new Docker({
+        socketPath: '/var/run/docker.sock',
+    });
     private readonly functionDockerEnvMap: Map<string, DockerEnv> = new Map<
         string,
         DockerEnv
@@ -133,11 +140,39 @@ export default class SAMLocalInvoker extends BaseInvoker {
             this.functionDockerEnvMap.get(functionName);
         if (dockerEnv) {
             this.functionDockerEnvMap.delete(functionName);
+
+            const container: Docker.Container | void =
+                await this._getRuntimeContainer(functionName, dockerEnv.envId);
+            if (container) {
+                try {
+                    await container.kill();
+                    logger.debug(
+                        `<SAMLocalInvoker> Container of Docker environment for function ${functionName} has been killed: ${container.id}`
+                    );
+                } catch (err: any) {
+                    logger.error(
+                        `<SAMLocalInvoker> Unable to kill container (id=${container.id}) of Docker environment for function ${functionName}:`,
+                        err
+                    );
+                }
+                try {
+                    await container.remove();
+                    logger.debug(
+                        `<SAMLocalInvoker> Container of Docker environment for function ${functionName} has been removed: ${container.id}`
+                    );
+                } catch (err: any) {
+                    logger.error(
+                        `<SAMLocalInvoker> Unable to remove container (id=${container.id}) of Docker environment for function ${functionName}:`,
+                        err
+                    );
+                }
+            }
             if (dockerEnv.process) {
-                const killed: boolean = dockerEnv.process.kill('SIGINT');
+                let killed: boolean;
                 if (isDebuggingEnabled()) {
-                    // In debug mode, process kill requires another kill exec command
-                    child_process.exec(`kill -s INT ${dockerEnv.process.pid}`);
+                    killed = dockerEnv.process.kill('SIGKILL');
+                } else {
+                    killed = dockerEnv.process.kill('SIGINT');
                 }
                 logger.debug(
                     `<SAMLocalInvoker> Process of Docker environment for function ${functionName} has been killed: ${killed}`
@@ -219,6 +254,61 @@ export default class SAMLocalInvoker extends BaseInvoker {
             }
         }
         return msg;
+    }
+
+    private async _getRuntimeContainer(
+        functionName: string,
+        envId: string
+    ): Promise<Docker.Container | undefined> {
+        const me: SAMLocalInvoker = this;
+        return new Promise<Docker.Container | undefined>(async (res, rej) => {
+            let foundContainer: Docker.Container | undefined;
+            try {
+                logger.debug('<SAMLocalInvoker> Listing containers ...');
+                const containers: Docker.ContainerInfo[] =
+                    await me.docker.listContainers();
+                for (let containerInfo of containers) {
+                    logger.debug(
+                        `<SAMLocalInvoker> Checking container whether it is for function ${functionName}: ${logger.toJson(
+                            containerInfo
+                        )}`
+                    );
+                    const container: Docker.Container = me.docker.getContainer(
+                        containerInfo.Id
+                    );
+                    logger.debug(
+                        `<SAMLocalInvoker> Inspecting container with id: ${containerInfo.Id} ...`
+                    );
+                    const containerInspectInfo: ContainerInspectInfo =
+                        await container.inspect();
+                    for (let envVar of containerInspectInfo?.Config?.Env) {
+                        const [envVarName, envVarValue] = envVar.split('=');
+                        logger.debug(
+                            `<SAMLocalInvoker> Env var: ${envVarName} = ${envVarValue}`
+                        );
+                        if (
+                            envVarName === MERLOC_ENV_ID_ENV_VAR_NAME &&
+                            envVarValue === envId
+                        ) {
+                            logger.debug(
+                                `<SAMLocalInvoker> Found container (id=${container.id}) as environment of function ${functionName}`
+                            );
+                            foundContainer = container;
+                            break;
+                        }
+                    }
+                    if (foundContainer) {
+                        break;
+                    }
+                }
+            } catch (err: any) {
+                logger.debug(
+                    `<SAMLocalInvoker> Error occurred while getting container for function ${functionName}:`,
+                    err
+                );
+            }
+            res(foundContainer);
+        });
     }
 
     private _getFunctionArgs(
@@ -380,6 +470,12 @@ export default class SAMLocalInvoker extends BaseInvoker {
         const lambdaAPIPort: number = ports[0];
         const debugPort: number = ports[1];
         const samOptions: string[] | undefined = this._getSAMOptions();
+        const profile: string | undefined =
+            process.env.AWS_PROFILE ||
+            process.env.AWS_DEFAULT_PROFILE ||
+            (await this._checkAndGetDefaultAWSProfile());
+        const region: string = invocationRequest.region;
+        const envId: string = uuidv4();
 
         const envVars: Record<string, any> = {};
         for (let [envVarName, envVarValue] of Object.entries(
@@ -403,11 +499,24 @@ export default class SAMLocalInvoker extends BaseInvoker {
             );
         }
 
-        const profile: string | undefined =
-            process.env.AWS_PROFILE ||
-            process.env.AWS_DEFAULT_PROFILE ||
-            (await this._checkAndGetDefaultAWSProfile());
-        const region: string = invocationRequest.region;
+        // This is only taken care of while debugging
+        const containerEnvVars: Record<string, any> = {
+            [MERLOC_ENV_ID_ENV_VAR_NAME]: envId,
+        };
+        const containerEnvVarFile: FileResult = tmp.fileSync({
+            postfix: '.json',
+        });
+        fs.writeFileSync(
+            containerEnvVarFile.name,
+            JSON.stringify(containerEnvVars)
+        );
+        if (logger.isDebugEnabled()) {
+            logger.debug(
+                `<SAMLocalInvoker> AWS SAM container environment variables for function ${functionName} into file ${
+                    containerEnvVarFile.name
+                }: ${logger.toJson(containerEnvVars)}`
+            );
+        }
 
         const samArgs: string[] = [
             'local',
@@ -420,6 +529,8 @@ export default class SAMLocalInvoker extends BaseInvoker {
             'LAZY',
             '--env-vars',
             envVarFile.name,
+            '--container-env-vars', // This is only taken care of while debugging
+            containerEnvVarFile.name,
             ...this._getFunctionArgs(functionName, lambdaAPIPort, debugPort),
         ];
         if (logger.isDebugEnabled()) {
@@ -434,7 +545,7 @@ export default class SAMLocalInvoker extends BaseInvoker {
             'sam',
             samArgs,
             {
-                stdio: ['ignore', 'pipe', 'pipe'],
+                stdio: ['pipe', 'pipe', 'pipe'],
                 env: {
                     ...process.env,
                     ...this._getFunctionContainerEnvVars(invocationRequest),
@@ -444,6 +555,7 @@ export default class SAMLocalInvoker extends BaseInvoker {
 
         const dockerEnv: DockerEnv = {
             process: samLocalInvokeProc,
+            envId,
             lambdaAPIPort: lambdaAPIPort,
             debugPort: debugPort,
             initialized: false,
