@@ -359,7 +359,7 @@ export default class SAMLocalInvoker extends BaseInvoker {
 
     private async _getSAMFunctionName(
         invocationRequest: InvocationRequest
-    ): Promise<string> {
+    ): Promise<string | undefined> {
         // Use AWS SAM function name from function env vars if it is specified
         if (invocationRequest.envVars[MERLOC_SAM_FUNCTION_NAME_ENV_VAR_NAME]) {
             return invocationRequest.envVars[
@@ -367,9 +367,15 @@ export default class SAMLocalInvoker extends BaseInvoker {
             ];
         }
 
-        // TODO Get from resolved template
+        // TODO Get from resolved template if possible
 
-        return invocationRequest.functionName;
+        logger.warn(
+            `Unable to resolve AWS SAM function resource name for function name "${invocationRequest.functionName}". ` +
+                `Please be sure that you set AWS SAM function resource name in your "template.yml" ` +
+                `to "${MERLOC_SAM_FUNCTION_NAME_ENV_VAR_NAME}" environment variable`
+        );
+
+        return undefined;
     }
 
     private _getSAMOptions(): string[] | undefined {
@@ -643,9 +649,8 @@ export default class SAMLocalInvoker extends BaseInvoker {
         invocationRequest: InvocationRequest
     ): Promise<InvocationResponse> {
         const functionName: string = invocationRequest.functionName;
-        const samFunctionName: string = await this._getSAMFunctionName(
-            invocationRequest
-        );
+        const samFunctionName: string | undefined =
+            await this._getSAMFunctionName(invocationRequest);
         logger.debug(
             `<SAMLocalInvoker> Resolved AWS SAM function name for function ${functionName}: ${samFunctionName}`
         );
