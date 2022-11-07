@@ -4,7 +4,7 @@ const { version } = require('./package.json');
 program
     .name('merloc')
     .description(
-        'MerLoc local CLI tool to manage communication between MerLoc broker and local AWS Lambda runners'
+        'MerLoc CLI tool to manage communication between MerLoc broker and local AWS Lambda runners'
     )
     .version(version)
     .addOption(new Option('-v, --verbose', 'Enable verbose mode'))
