@@ -44,6 +44,8 @@ const MAX_LAMBDA_API_UP_WAIT_TIME = 60 * 1000; // 1 minute
 const CREDENTIALS_EXPIRE_TIME = 60 * 60 * 1000; // 1 hour
 const MERLOC_BROKER_URL_ENV_VAR_NAME = 'MERLOC_BROKER_URL';
 const MERLOC_ENV_ID_ENV_VAR_NAME = 'MERLOC_ENV_ID';
+const MERLOC_HOST_DEBUG_PORT_ENV_VAR_NAME = 'MERLOC_HOST_DEBUG_PORT';
+const MERLOC_DOCKER_DEBUG_PORT_ENV_VAR_NAME = 'MERLOC_DOCKER_DEBUG_PORT';
 const MERLOC_SAM_FUNCTION_NAME_ENV_VAR_NAME = 'MERLOC_SAM_FUNCTION_NAME';
 const FUNCTION_ERROR_HEADER_NAME = 'x-amz-function-error';
 const FUNCTION_ENV_VARS_TO_IGNORE = new Set([
@@ -509,6 +511,10 @@ export default class SAMLocalInvoker extends BaseInvoker {
         const containerEnvVars: Record<string, any> = {
             [MERLOC_ENV_ID_ENV_VAR_NAME]: envId,
         };
+        if (isDebuggingEnabled()) {
+            containerEnvVars[MERLOC_HOST_DEBUG_PORT_ENV_VAR_NAME] = debugPort;
+            containerEnvVars[MERLOC_DOCKER_DEBUG_PORT_ENV_VAR_NAME] = debugPort;
+        }
         const containerEnvVarFile: FileResult = tmp.fileSync({
             postfix: '.json',
         });

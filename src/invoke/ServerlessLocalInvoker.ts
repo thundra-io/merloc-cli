@@ -19,8 +19,6 @@ import {
     FUNCTION_LOG_COLORS,
 } from '../constants';
 import {
-    getSAMInitCommand,
-    getSAMReloadCommand,
     getSLSInitCommand,
     getSLSOptions,
     getSLSReloadCommand,
