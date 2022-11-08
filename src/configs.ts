@@ -1,5 +1,5 @@
 import { program, Option } from 'commander';
-const { version } = require('./package.json');
+const { version } = require('../package.json');
 
 program
     .name('merloc')
