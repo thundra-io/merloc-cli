@@ -201,16 +201,10 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
         logger.info(`Docker environment started for function ${functionName}`);
 
         if (isDebuggingEnabled()) {
-            if (this._isDebuggingSupportedRuntime(dockerEnv.runtime)) {
-                const debugInfo: string = chalk.greenBright(
-                    `localhost:${dockerEnv.debugPort}`
-                );
-                logger.info(`You can attach debugger at ${debugInfo}`);
-            } else {
-                logger.warn(
-                    `Debugging is not supported for ${dockerEnv.runtime} runtime!`
-                );
-            }
+            const debugInfo: string = chalk.greenBright(
+                `localhost:${dockerEnv.debugPort}`
+            );
+            logger.info(`You can attach debugger at ${debugInfo}`);
         }
 
         await this._tailLogs(functionName, dockerEnv, dockerEnv.container!);
@@ -348,14 +342,6 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
         });
     }
 
-    private _isDebuggingSupportedRuntime(runtime: string): boolean {
-        if (runtime.startsWith('nodejs') || runtime.startsWith('java')) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     private _formatFunctionName(name: string): string {
         const color: string =
             FUNCTION_LOG_COLORS[
@@ -474,7 +460,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
             return Promise.resolve();
         }
         return new Promise<void>((res, rej) => {
-            const dockerPullProc: child_process.ChildProcess = spawn(
+            const dockerTagProc: child_process.ChildProcess = spawn(
                 'docker',
                 [
                     'tag',
@@ -487,13 +473,13 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                         : ['ignore', 'ignore', 'inherit'],
                 }
             );
-            dockerPullProc.on('close', (code: number) => {
+            dockerTagProc.on('close', (code: number) => {
                 logger.debug(
                     `<ServerlessLocalInvoker> Mapped Docker image for runtime: ${runtime}`
                 );
                 res();
             });
-            dockerPullProc.on('error', (err: Error) => {
+            dockerTagProc.on('error', (err: Error) => {
                 logger.error(
                     `<ServerlessLocalInvoker> Unable to map Docker image for runtime ${runtime}:`,
                     err
