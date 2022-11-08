@@ -40,7 +40,7 @@ type DockerEnv = {
 
 const BASE_PORT = 10000;
 const MAX_PORT = 65536;
-const MAX_LAMBDA_API_UP_WAIT_TIME = 60 * 1000; // 1 minute
+const MAX_LAMBDA_API_UP_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
 const CREDENTIALS_EXPIRE_TIME = 60 * 60 * 1000; // 1 hour
 const MERLOC_BROKER_URL_ENV_VAR_NAME = 'MERLOC_BROKER_URL';
 const MERLOC_ENV_ID_ENV_VAR_NAME = 'MERLOC_ENV_ID';
@@ -152,7 +152,7 @@ export default class SAMLocalInvoker extends BaseInvoker {
                         `<SAMLocalInvoker> Container of Docker environment for function ${functionName} has been killed: ${container.id}`
                     );
                 } catch (err: any) {
-                    logger.error(
+                    logger.debug(
                         `<SAMLocalInvoker> Unable to kill container (id=${container.id}) of Docker environment for function ${functionName}:`,
                         err
                     );
@@ -163,7 +163,7 @@ export default class SAMLocalInvoker extends BaseInvoker {
                         `<SAMLocalInvoker> Container of Docker environment for function ${functionName} has been removed: ${container.id}`
                     );
                 } catch (err: any) {
-                    logger.error(
+                    logger.debug(
                         `<SAMLocalInvoker> Unable to remove container (id=${container.id}) of Docker environment for function ${functionName}:`,
                         err
                     );

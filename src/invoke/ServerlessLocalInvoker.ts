@@ -41,7 +41,7 @@ type DockerEnv = {
 
 const BASE_PORT = 10000;
 const MAX_PORT = 65536;
-const MAX_LAMBDA_API_UP_WAIT_TIME = 60 * 1000; // 1 minute
+const MAX_LAMBDA_API_UP_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
 const CREDENTIALS_EXPIRE_TIME = 60 * 60 * 1000; // 1 hour
 const DOCKER_INTERNAL_LAMBDA_API_PORT = 9001;
 const DOCKER_INTERNAL_DEBUG_PORT = 9002;
@@ -134,7 +134,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                         `<ServerlessLocalInvoker> Container of Docker environment for function ${functionName} has been killed: ${dockerEnv.container.id}`
                     );
                 } catch (err: any) {
-                    logger.error(
+                    logger.debug(
                         `<ServerlessLocalInvoker> Unable to kill container (id=${dockerEnv.container.id}) of Docker environment for function ${functionName}:`,
                         err
                     );
@@ -145,7 +145,7 @@ export default class ServerlessLocalInvoker extends BaseInvoker {
                         `<ServerlessLocalInvoker> Container of Docker environment for function ${functionName} has been removed: ${dockerEnv.container.id}`
                     );
                 } catch (err: any) {
-                    logger.error(
+                    logger.debug(
                         `<ServerlessLocalInvoker> Unable to remove container (id=${dockerEnv.container.id}) of Docker environment for function ${functionName}:`,
                         err
                     );
