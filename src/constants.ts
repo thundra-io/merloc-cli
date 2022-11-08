@@ -43,6 +43,7 @@ export const ERROR_TYPES = {
     RUNTIME_NOT_ACTIVE: 'RuntimeNotActiveError',
     RUNTIME_IN_USE: 'RuntimeInUseError',
     FUNCTION_IN_USE: 'FunctionInUseError',
+    FORWARD_TO_TARGET_FAILED: 'ForwardToTargetFailed',
 };
 
 export const FUNCTION_LOG_COLORS = [
