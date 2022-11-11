@@ -1,8 +1,9 @@
 import chalk from 'chalk';
 
-import * as configs from './configs';
-
 export function isDebugEnabled(): boolean {
+    // To prevent cyclic dependency between "logger" and "configs",
+    // we require on demand here, not during module load
+    const configs = require('./configs');
     return configs.isVerboseEnabled();
 }
 

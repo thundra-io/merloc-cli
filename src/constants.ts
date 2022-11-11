@@ -1,3 +1,5 @@
+export const THUNDRA_BROKER_URL = 'wss://merloc-broker.thundra.io';
+
 export const BROKER_CONNECTION_TYPE = 'gatekeeper';
 export const CLIENT_CONNECTION_TYPE = 'client';
 export const GATEKEEPER_CONNECTION_TYPE = 'gatekeeper';

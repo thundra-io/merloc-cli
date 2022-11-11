@@ -1,4 +1,6 @@
 import { program, Option } from 'commander';
+import { THUNDRA_BROKER_URL } from './constants';
+import { error } from './logger';
 const { version } = require('../package.json');
 
 program
@@ -9,8 +11,8 @@ program
     .version(version)
     .addOption(new Option('-v, --verbose', 'Enable verbose mode'))
     .addOption(
-        new Option('-b, --broker-url <url>', 'Broker URL').makeOptionMandatory(
-            true
+        new Option('-b, --broker-url <url>', 'Broker URL').default(
+            THUNDRA_BROKER_URL
         )
     )
     .addOption(
@@ -92,6 +94,15 @@ const MERLOC_SAM_OPTIONS = options.samOptions;
 const MERLOC_SAM_INIT_CMD = options.samInit;
 const MERLOC_SAM_RELOAD_CMD = options.samReload;
 
+function _checkConfigs(): void {
+    if (MERLOC_BROKER_URL === THUNDRA_BROKER_URL && !MERLOC_APIKEY) {
+        error(
+            'Thundra API key is required when Thundra MerLoc broker (which is default) is used'
+        );
+        process.exit(1);
+    }
+}
+
 export function isVerboseEnabled(): boolean {
     return MERLOC_VERBOSE_ENABLED;
 }
@@ -155,3 +166,5 @@ export function getSAMInitCommand(): string {
 export function getSAMReloadCommand(): string {
     return MERLOC_SAM_RELOAD_CMD;
 }
+
+_checkConfigs();
