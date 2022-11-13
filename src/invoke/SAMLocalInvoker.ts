@@ -330,6 +330,20 @@ export default class SAMLocalInvoker extends BaseInvoker {
         return functionArgs;
     }
 
+    private _getFunctionBootstrapEnvVars(
+        invocationRequest: InvocationRequest
+    ): Record<string, any> {
+        const functionEnvVars: Record<string, any> = {};
+        for (let envVarName of FUNCTION_AWS_IAM_ENV_VARS) {
+            const envVarValue: string | undefined =
+                invocationRequest.envVars[envVarName];
+            if (envVarValue) {
+                functionEnvVars[envVarName] = envVarValue;
+            }
+        }
+        return functionEnvVars;
+    }
+
     private _getFunctionEnvVars(
         invocationRequest: InvocationRequest
     ): Record<string, any> {
@@ -493,6 +507,30 @@ export default class SAMLocalInvoker extends BaseInvoker {
         }
         // Clear MerLoc broker URL env var so it will be disabled in the local Lambda container
         envVars[MERLOC_BROKER_URL_ENV_VAR_NAME] = '';
+
+        const bootstrapInitEnvVars: Record<string, any> =
+            this._getFunctionBootstrapEnvVars(invocationRequest);
+        const bootstrapInitEnvVarsContent: string = Object.entries(
+            bootstrapInitEnvVars
+        ).reduce(function (accumulator, envVar) {
+            return accumulator + `export ${envVar[0]}=${envVar[1]}\n`;
+        }, '');
+        const initEnvVarFileDir: string = `.aws-sam/build/${functionName}`;
+        if (fs.existsSync(initEnvVarFileDir)) {
+            const initEnvVarFileName: string = `${initEnvVarFileDir}/.merloc-env`;
+            fs.writeFileSync(initEnvVarFileName, bootstrapInitEnvVarsContent);
+            if (logger.isDebugEnabled()) {
+                logger.debug(
+                    `<SAMLocalInvoker> AWS SAM init environment variables for function ${functionName} ` +
+                        `into file ${initEnvVarFileName}: ${bootstrapInitEnvVarsContent}`
+                );
+            }
+        } else {
+            logger.debug(
+                `<SAMLocalInvoker> Unable to add AWS SAM init environment variables for function ${functionName} ` +
+                    `into file because ${initEnvVarFileDir} directory is not exist`
+            );
+        }
 
         const envVarFile: FileResult = tmp.fileSync({ postfix: '.json' });
         fs.writeFileSync(
