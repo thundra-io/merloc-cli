@@ -68,7 +68,7 @@ First, you need to setup MerLoc **Broker** and **GateKeeper** components:
 ## Setup
 
 ```
-npm install -g merloc-local
+npm install -g merloc-cli
 ```
 
 After install, check whether it is installed successfully:
