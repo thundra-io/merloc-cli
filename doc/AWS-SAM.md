@@ -164,7 +164,11 @@ merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local 
 
 ### Python
 
-TBD
+If you use Python and you have `.py` files in your project,
+you can use the following sample options to enable hot-reloading and watch changes for `.py` files:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w '**/*.py'
+``` 
 
 ### Java
 
@@ -205,11 +209,19 @@ merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local 
 
 ### .NET
 
-TBD
+If you use .NET and you have `.cs` files in your project,
+you can use the following sample options to enable hot-reloading and watch changes for `.cs` files:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w '**/*.cs'
+``` 
 
 ### Go
 
-TBD
+If you use Go and you have `.go` files in your project,
+you can use the following sample options to enable hot-reloading and watch changes for `.go` files:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w '**/*.go'
+``` 
 
 ## Configuration
 
