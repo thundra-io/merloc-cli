@@ -20,7 +20,7 @@
 
 ## Setup
 
-In addition to common [pre-setup](../README.md#pre-setup) and [setup](../README.md#setup) instructions,
+In addition to common [Pre Setup](../README.md#pre-setup) and [Setup](../README.md#setup) instructions,
 there is one additional setup step required for AWS SAM.
 
 You need to set `MERLOC_SAM_FUNCTION_NAME` environment variable of the AWS Lambda function
@@ -192,11 +192,24 @@ In addition to common [configurations](../README.md#configuration), there are al
 This means that either your don't have `default` AWS profile in your local AWS credentials (`~/.aws/credentials` by default), 
 or your `default` profile doesn't have AWS IAM permissions to download the layer. 
 In this case, you have the following options to solve this problem:
-- Define a `default` AWS profile in your local AWS credentials (`~/.aws/credentials` by default) which has enough AWS IAM permissions to download the layer
-- If the `default` AWS profile is already exist, give enough AWS IAM permissions to your `default` AWS profile to download the layer
-- Or use a different AWS profile which has enough AWS IAM permissions to download the layer 
-  by specifying the AWS profile name through `AWS_PROFILE` environment variable while running MerLoc CLI.
-  For example:
-  ```
-  AWS_PROFILE=<my-aws-profile> merloc wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local 
-  ```
+  - Define a `default` AWS profile in your local AWS credentials (`~/.aws/credentials` by default) which has enough AWS IAM permissions to download the layer
+  - If the `default` AWS profile is already exist, give enough AWS IAM permissions to your `default` AWS profile to download the layer
+  - Or use a different AWS profile which has enough AWS IAM permissions to download the layer 
+    by specifying the AWS profile name through `AWS_PROFILE` environment variable while running MerLoc CLI.
+    For example:
+    ```
+    AWS_PROFILE=<my-aws-profile> merloc wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local 
+    ```
+
+
+- If you encounter the following error when running function locally,
+```
+[MERLOC] <invocation-time> | WARN  - Unable to resolve AWS SAM function resource name for function name "hello-world". Please be sure that you set AWS SAM function resource name in your "template.yml" to "MERLOC_SAM_FUNCTION_NAME" environment variable
+```
+
+This means that 
+  - either you didn't set `MERLOC_SAM_FUNCTION_NAME` environment variable at all
+  - or you only set `MERLOC_SAM_FUNCTION_NAME` in the `template.yml` locally and have not deployed yet, so it is not available in the AWS Lambda.
+
+To fix this, you need to set `MERLOC_SAM_FUNCTION_NAME` environment variable of the AWS Lambda function
+to the logical resource id of your AWS Lambda function defined in the `template.yml` file as explained in the [Setup](#setup) section above.
