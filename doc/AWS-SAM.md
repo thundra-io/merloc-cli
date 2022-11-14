@@ -94,7 +94,15 @@ TBD
 
 ### Java
 
-TBD
+```
+[MERLOC] <invocation-time> | INFO  - You can attach debugger at localhost:<debug-port-no>
+[MERLOC] <invocation-time> | INFO  - Docker environment started for function <function-name>
+...
+<function-name>  START RequestId: <request-id> Version: <version>
+<function-name>  Picked up _JAVA_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=<debug-port-no> ...
+```
+
+Then you can attach your Java debugger to the debug port (shown as `<debug-port-no>` in the above logs) on `localhost`.
 
 ### .NET
 
@@ -113,7 +121,7 @@ For example:
 merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r
 ```  
 
-When hot-reloading is enabled, current directory is watched for changes. 
+If hot-reloading is enabled, current directory is watched for changes. 
 If you want to configure paths (directories and files) to be watched, 
 you can use `-w <paths...>` (or `--watch <paths...>`) option as described [here](../README.md#configuration).
 
@@ -121,24 +129,37 @@ Then, when there are changes detected under watched paths,
 reload command, which is `sam build` by default, is executed automatically.
 Additionally, reload command can be configured by `--sam-reload <cmd>` option.
 
+When hot-reloading is triggered and applied, you will see log messages in the MerLoc CLI console like this:
+```
+[MERLOC] <time> | INFO  - Reloading ...
+[MERLOC] <time> | INFO  - Running "sam build" ...
+...
+[MERLOC] <time> | INFO  - Reloaded
+```
+
 ### Node.js
 
 #### Javascript
 
-For example, let's say that you use pure Javascript and you have `.js` files under `src` directory in your project.
-If you want to enable hot-reloading and watch changes for `.js` files under `src` directory, 
+For example, let's say that you use pure Javascript and you have `.js` files in your project.
+If you want to enable hot-reloading and watch changes for `.js` files, 
 you can use the following sample options:
 ```
-merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w 'src/*.js'
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w '**/*.js'
 ``` 
 
 #### Typescript
 
-For example, let's say that you use pure Typescript and you have `.ts` files under `src` directory in your project.
-If you want to enable hot-reloading and watch changes for `.ts` files under `src` directory,
+If you use Typescript and you have `.ts` files in your project,
+you can use the following sample options to enable hot-reloading and watch changes for `.ts` files:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w '**/*.ts'
+``` 
+
+If you have both Typescript (`.ts`) and pure Javascript (`.js`) files,
 you can use the following sample options:
 ```
-merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w 'src/*.ts'
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w '**/*.js' '**/*.ts'
 ``` 
 
 ### Python
@@ -147,7 +168,40 @@ TBD
 
 ### Java
 
-TBD
+For example, let's say that you use pure Java and you have `.java` files under `src` directory in your project.
+If you want to enable hot-reloading and watch changes for `.java` files under `src` directory,
+you can use the following sample options:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w 'src/**/*.java'
+``` 
+
+#### Kotlin
+
+If you use Kotlin and you have `.kt` files under `src` directory in your project,
+you can use the following sample options to enable hot-reloading and watch changes for `.kt` files:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w 'src/**/*.kt'
+``` 
+
+If you have both Kotlin (`.kt`) and pure Java (`.java`) files,
+you can use the following sample options:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w 'src/**/*.java' 'src/**/*.kt'
+``` 
+
+#### Scala
+
+If you use Scala and you have `.scala` files under `src` directory in your project,
+you can use the following sample options to enable hot-reloading and watch changes for `.scala` files:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w 'src/**/*.scala'
+``` 
+
+If you have both Scala (`.scala`) and pure Java (`.java`) files,
+you can use the following sample options:
+```
+merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local -r -w 'src/**/*.java' 'src/**/*.scala'
+``` 
 
 ### .NET
 
@@ -220,3 +274,14 @@ In addition to common [configurations](../README.md#configuration), there are al
 
   This means that there is no Docker up and running on your local. 
   To use MerLoc CLI with AWS SAM, you need to have installed Docker up and running on your local. 
+
+- If you encounter the following error when running function locally,
+  ```
+  <function-name>  /opt/extensions/merloc-gatekeeper: line 10:    21 Killed                  _NODE_OPTIONS="$NODE_OPTIONS" NODE_OPTIONS="" /opt/extensions/merloc-gatekeeper-ext/bin/node /opt/extensions/merloc-gatekeeper-ext/dist/index.js
+  <function-name>  <invocation-time> [ERROR] (rapid) Init failed error=exit status 137 InvokeID=
+  ```
+  
+  This means that MerLoc Gatekeeper extension killed by Linux OOM Killer inside Docker because of insufficient memory. 
+  You need to increase memory limit of the function in your `template.yml`.
+  This error typically happens when memory limit is around `128 MB`. 
+  So in this case, you should consider give `256 MB` or more memory limit to the function `template.yml`.

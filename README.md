@@ -55,7 +55,7 @@ to improve your productivity by preventing you from wasting your time with unnec
 
 ## Prerequisites
 - Node.js 14+
-- Docker
+- Docker (**installed and running**)
 
 ## Pre-Setup
 
