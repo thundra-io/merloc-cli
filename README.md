@@ -1,4 +1,4 @@
-# MerLoc Local
+# MerLoc CLI
 
 ![Build Status](https://github.com/thundra-io/merloc-local/actions/workflows/build.yml/badge.svg)
 ![NPM Version](https://badge.fury.io/js/merloc-local.svg)
@@ -7,7 +7,7 @@
 **MerLoc** is a live AWS Lambda function development and debugging tool.
 MerLoc allows you to run AWS Lambda functions on your local while they are still part of a flow in the AWS cloud remote.
 
-**MerLoc Local** is a client side CLI tool to run AWS Lambda functions on your local.
+**MerLoc CLI** is a client side CLI tool to run AWS Lambda functions on your local.
 It communicates with **MerLoc GateKeeper** in AWS Lambda function over **MerLoc Broker** 
 for receiving invocations, executing function locally and then returning response to AWS Lambda service.
 
@@ -79,7 +79,7 @@ By this command, you should see the installed version number if everything is in
 
 ## How to Run
 
-**MerLoc local** (`merloc` command) must be run in your serverless project root directory,
+**MerLoc CLI** (`merloc` command) must be run in your serverless project root directory,
 so it can use the integrated tool (`AWS SAM`, `Serverless Framework`, ...) to run function locally.
 
 ## Configuration
@@ -141,6 +141,7 @@ so it can use the integrated tool (`AWS SAM`, `Serverless Framework`, ...) to ru
   ```
   merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -r
   ```  
+  **Note:** Hot-reload can also be triggered manually by pressing `Ctrl+R`.
 
 - `-w <paths...>` (or `--watch <paths...>`): Configures paths to files, directories or **glob** patterns 
   to be watched for changes to trigger hot-reload automatically.
@@ -150,6 +151,20 @@ so it can use the integrated tool (`AWS SAM`, `Serverless Framework`, ...) to ru
   ```
   merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -r -w '**/*.ts' '**/*.js'
   ```  
+  **Note:**
+  The following file patterns are ignored from being watched:
+  - `'**/.idea/**'`
+  - `**/.vscode/**'`
+  - `**/.github/**'`
+  - `**/.serverless/**'`
+  - `**/.aws-sam/**'`
+  - `**/.build/**'`
+  - `**/.*'`
+  - `**/*.json'`
+  - `**/*.yml'`
+  - `**/*.md'`
+  - `**/*.txt'`
+  - `**/LICENSE'`
 
 - `-rc <mode>` (or `--runtime-concurrency <mode>`): Configures concurrency level at runtime level globally.
   This configuration is **OPTIONAL**. The default value is `reject`.
@@ -203,13 +218,13 @@ so it can use the integrated tool (`AWS SAM`, `Serverless Framework`, ...) to ru
 
 ### AWS SAM
 
-**MerLoc local** (`merloc` command) must be run in your **AWS SAM** project root directory where `template.yml` file is located.
+**MerLoc CLI** (`merloc` command) must be run in your **AWS SAM** project root directory where `template.yml` file is located.
 
 Go to [AWS SAM](./doc/AWS-SAM.md) page for the details.
 
 ### Serverless Framework
 
-**MerLoc local** (`merloc` command) must be run in your **Serverless Framework** project root directory where `serverless.yml` file is located.
+**MerLoc CLI** (`merloc` command) must be run in your **Serverless Framework** project root directory where `serverless.yml` file is located.
 
 [Serverless Framework](./doc/Serverless-Framework.md) page for the details.
 
