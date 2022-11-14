@@ -14,8 +14,8 @@
 | `java8.al2`     | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `java11`        | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `dotnetcore3.1` |        :x:         |            :x:             |        :x:         |
-| `dotnet6`       | :white_check_mark: |    :white_check_mark:      | :white_check_mark: |
-| `go1.x`         | :white_check_mark: |    :white_check_mark:      | :white_check_mark: |
+| `dotnet6`       | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
+| `go1.x`         | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `ruby2.7`       | :white_check_mark: |            :x:             | :white_check_mark: |
 
 ## Setup
@@ -203,7 +203,7 @@ In addition to common [configurations](../README.md#configuration), there are al
 
 - If you encounter the following error when running function locally,
   ```
-  [MERLOC] <invocation-time> | WARN  - Unable to resolve AWS SAM function resource name for function name "hello-world". Please be sure that you set AWS SAM function resource name in your "template.yml" to "MERLOC_SAM_FUNCTION_NAME" environment variable
+  [MERLOC] <invocation-time> | WARN  - Unable to resolve AWS SAM function resource name for function name <function-name>". Please be sure that you set AWS SAM function resource name in your "template.yml" to "MERLOC_SAM_FUNCTION_NAME" environment variable
   ```
 
   This means that 
@@ -212,3 +212,11 @@ In addition to common [configurations](../README.md#configuration), there are al
 
   To fix this, you need to set `MERLOC_SAM_FUNCTION_NAME` environment variable of the AWS Lambda function
   to the logical resource id of your AWS Lambda function defined in the `template.yml` file as explained in the [Setup](#setup) section above.
+
+- If you encounter the following error when running function locally,
+  ```
+  <function-name>  Error: Running AWS SAM projects locally requires Docker. Have you got it installed and running?
+  ```
+
+  This means that there is no Docker up and running on your local. 
+  To use MerLoc CLI with AWS SAM, you need to have installed Docker up and running on your local. 
