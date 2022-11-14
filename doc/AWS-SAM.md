@@ -14,8 +14,8 @@
 | `java8.al2`     | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `java11`        | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `dotnetcore3.1` |        :x:         |            :x:             |        :x:         |
-| `dotnet6`       | :white_check_mark: |            ???             | :white_check_mark: |
-| `go1.x`         | :white_check_mark: |            ???             | :white_check_mark: |
+| `dotnet6`       | :white_check_mark: |    :white_check_mark:      | :white_check_mark: |
+| `go1.x`         | :white_check_mark: |    :white_check_mark:      | :white_check_mark: |
 | `ruby2.7`       | :white_check_mark: |            :x:             | :white_check_mark: |
 
 ## Setup
@@ -178,21 +178,21 @@ In addition to common [configurations](../README.md#configuration), there are al
 ## Troubleshooting
 
 - If you encounter the following error when running function locally,
-```
-[MERLOC] <invocation-time> | INFO  - Docker environment started for function <function-name>
-...
-<function-name>  Exception on /2015-03-31/functions/<function-name>/invocations [POST]
-<function-name>  Traceback (most recent call last):
-...
-<function-name> samcli.commands.local.cli_common.user_exceptions.CredentialsRequired: Credentials provided are missing lambda:Getlayerversion policy that is needed to download the layer or you do not have permission to download the layer
-<function-name> <invocation-time> 127.0.0.1 - - [<invocation-time>] "POST /2015-03-31/functions/<function-name>/invocations HTTP/1.1" 500 -
-[MERLOC] <invocation-time> | ERROR - <SAMLocalInvoker> Error occurred while handling invocation request for function <function-name>: AxiosError: Request failed with status code 500
-```
+  ```
+  [MERLOC] <invocation-time> | INFO  - Docker environment started for function <function-name>
+  ...
+  <function-name>  Exception on /2015-03-31/functions/<function-name>/invocations [POST]
+  <function-name>  Traceback (most recent call last):
+  ...
+  <function-name> samcli.commands.local.cli_common.user_exceptions.CredentialsRequired: Credentials provided are missing lambda:Getlayerversion policy that is needed to download the layer or you do not have permission to download the layer
+  <function-name> <invocation-time> 127.0.0.1 - - [<invocation-time>] "POST /2015-03-31/functions/<function-name>/invocations HTTP/1.1" 500 -
+  [MERLOC] <invocation-time> | ERROR - <SAMLocalInvoker> Error occurred while handling invocation request for function <function-name>: AxiosError: Request failed with status code 500
+  ```
 
-This means that either your don't have `default` AWS profile in your local AWS credentials (`~/.aws/credentials` by default), 
-or your `default` profile doesn't have AWS IAM permissions to download the layer. 
-In this case, you have the following options to solve this problem:
-  - Define a `default` AWS profile in your local AWS credentials (`~/.aws/credentials` by default) which has enough AWS IAM permissions to download the layer
+  This means that either your don't have `default` AWS profile in your local AWS credentials (`~/.aws/credentials` by default), 
+  or your `default` profile doesn't have AWS IAM permissions to download the layer. 
+  In this case, you have the following options to solve this problem:
+  - Define a `default` AWS profile in your local AWS credentials (`~/.aws/credentials` by default) which has enough AWS IAM permissions to download the   layer
   - If the `default` AWS profile is already exist, give enough AWS IAM permissions to your `default` AWS profile to download the layer
   - Or use a different AWS profile which has enough AWS IAM permissions to download the layer 
     by specifying the AWS profile name through `AWS_PROFILE` environment variable while running MerLoc CLI.
@@ -201,15 +201,14 @@ In this case, you have the following options to solve this problem:
     AWS_PROFILE=<my-aws-profile> merloc wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -i sam-local 
     ```
 
-
 - If you encounter the following error when running function locally,
-```
-[MERLOC] <invocation-time> | WARN  - Unable to resolve AWS SAM function resource name for function name "hello-world". Please be sure that you set AWS SAM function resource name in your "template.yml" to "MERLOC_SAM_FUNCTION_NAME" environment variable
-```
+  ```
+  [MERLOC] <invocation-time> | WARN  - Unable to resolve AWS SAM function resource name for function name "hello-world". Please be sure that you set AWS SAM function resource name in your "template.yml" to "MERLOC_SAM_FUNCTION_NAME" environment variable
+  ```
 
-This means that 
+  This means that 
   - either you didn't set `MERLOC_SAM_FUNCTION_NAME` environment variable at all
   - or you only set `MERLOC_SAM_FUNCTION_NAME` in the `template.yml` locally and have not deployed yet, so it is not available in the AWS Lambda.
 
-To fix this, you need to set `MERLOC_SAM_FUNCTION_NAME` environment variable of the AWS Lambda function
-to the logical resource id of your AWS Lambda function defined in the `template.yml` file as explained in the [Setup](#setup) section above.
+  To fix this, you need to set `MERLOC_SAM_FUNCTION_NAME` environment variable of the AWS Lambda function
+  to the logical resource id of your AWS Lambda function defined in the `template.yml` file as explained in the [Setup](#setup) section above.
