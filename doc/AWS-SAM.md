@@ -90,7 +90,18 @@ Once your debugger attached, you will see a log message like this in the MerLoc 
 
 ### Python
 
-TBD
+```
+[MERLOC] 17:47:11 GMT+3 | INFO  - AWS Lambda API for function <function-name> is up
+[MERLOC] 17:47:13 GMT+3 | INFO  - Docker environment started for function <function-name>
+[MERLOC] 17:47:13 GMT+3 | INFO  - You can attach debugger at localhost:<docker-port-no>
+```
+
+Then you can attach your Python debugger to the debug port (shown as `<debug-port-no>` in the above logs) on `localhost` by changing
+_GET_MERLOC_DOCKER_PORT_FROM_TERMINAL_ into .vscode/launch.json.
+Once your debugger attached, you will see a log message like this in the MerLoc CLI console and hit breakpoint:
+```
+<function-name>  START RequestId: 8c6a9575-0014-16b1-93df-c0dd6a853fe3 Version: $LATEST
+```
 
 ### Java
 
@@ -106,7 +117,20 @@ Then you can attach your Java debugger to the debug port (shown as `<debug-port-
 
 ### .NET
 
-TBD
+```
+[MERLOC] 17:47:11 GMT+3 | INFO  - AWS Lambda API for function <function-name> is up
+[MERLOC] 17:47:13 GMT+3 | INFO  - Docker environment started for function <function-name>
+[MERLOC] 17:47:13 GMT+3 | INFO  - You can attach debugger at localhost:<docker-port-no>
+```
+
+Then you can trigger your lambda function from "TEST" at aws console and you will see a log message like this in the MerLoc CLI console:
+```
+<function-name>  START RequestId: c4dc9c03-8a13-4b1b-ad50-961305a5f073 Version: $LATEST
+<function-name> [Info] Waiting for the debugger to attach...
+```
+
+Start debugger on VSCode and then select samcli/lambda container and click yes for "Attaching to container requires .NET Core debugger in the container. Do you want to copy the debugger to the container?" to allow 
+.NET debugger copying into Merloc samcli/lambda container. After all this process, you can see hitting breakpoint.
 
 ### Go
 
