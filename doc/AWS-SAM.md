@@ -18,6 +18,12 @@
 | `go1.x`         | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `ruby2.7`       | :white_check_mark: |            :x:             | :white_check_mark: |
 
+:white_check_mark: Supported
+
+:eight_pointed_black_star: Supported but requires code change
+
+:x: Not supported
+
 ## Setup
 
 In addition to common [Pre Setup](../README.md#pre-setup) and [Setup](../README.md#setup) instructions,
