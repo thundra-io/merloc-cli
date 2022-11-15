@@ -90,6 +90,17 @@ Once your debugger attached, you will see a log message like this in the MerLoc 
 
 ### Python
 
+Add _ptvsd_ python library to your requirements and paste the following snippet before your lambda function.
+
+```python
+if "AWS_SAM_LOCAL" in os.environ and os.environ["AWS_SAM_LOCAL"]:
+    import ptvsd
+    ptvsd.enable_attach(address=('0.0.0.0', os.environ["MERLOC_DOCKER_DEBUG_PORT"]), redirect_output=True)
+    ptvsd.wait_for_attach()
+```
+
+After run merloc command specified above, you can see following message at terminal.
+
 ```
 [MERLOC] 17:47:11 GMT+3 | INFO  - AWS Lambda API for function <function-name> is up
 [MERLOC] 17:47:13 GMT+3 | INFO  - Docker environment started for function <function-name>
