@@ -129,6 +129,20 @@ Then you can trigger your lambda function from "TEST" at aws console and you wil
 <function-name> [Info] Waiting for the debugger to attach...
 ```
 
+Add the following snippet into your vscode/launch.json and change according to your project.
+
+```
+{
+            "name": "Docker .NET Core Attach (Preview)",
+            "type": "docker",
+            "request": "attach",
+            "platform": "netCore",
+            "sourceFileMap": {
+                "/src": "${workspaceFolder}"
+            }
+        }
+```
+
 Start debugger on VSCode and then select samcli/lambda container and click yes for "Attaching to container requires .NET Core debugger in the container. Do you want to copy the debugger to the container?" to allow 
 .NET debugger copying into Merloc samcli/lambda container. After all this process, you can see hitting breakpoint.
 
