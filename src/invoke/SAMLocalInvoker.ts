@@ -621,8 +621,13 @@ export default class SAMLocalInvoker extends BaseInvoker {
             }
         });
         samLocalInvokeProc.stderr?.on('data', (data) => {
-            if (dockerEnv.initialized || logger.isDebugEnabled()) {
-                this._outputDockerEnvLog(functionName, data.toString());
+            const message: string = data.toString();
+            if (
+                dockerEnv.initialized ||
+                logger.isDebugEnabled() ||
+                message.startsWith('Error:')
+            ) {
+                this._outputDockerEnvLog(functionName, message);
             }
         });
         samLocalInvokeProc.on('error', (err: Error) => {
