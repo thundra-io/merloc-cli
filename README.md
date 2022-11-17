@@ -65,7 +65,7 @@ First, you need to setup MerLoc **Broker** and **GateKeeper** components:
 
 2) [Setup](https://github.com/thundra-io/merloc-gatekeeper-aws-lambda-extension) MerLoc **GateKeeper** to your AWS Lambda function
 
-> Warning:
+> **Warning**
 > MerLoc **GateKeeper** setup requires different configurations for Go runtime. 
 > You can check [here](https://github.com/thundra-io/merloc-gatekeeper-aws-lambda-extension#layer-setup-for-go-runtime)
 > and [here](https://github.com/thundra-io/merloc-gatekeeper-aws-lambda-extension#configure-for-go-runtime) for the details.
