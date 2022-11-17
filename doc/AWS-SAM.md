@@ -48,7 +48,7 @@ Resources:
 In this example, logical resource id of your AWS Lambda function is `HelloWorldFunction`,
 so you need to set `MERLOC_SAM_FUNCTION_NAME` environment variable to `HelloWorldFunction`.
 This is needed by MerLoc to map remote AWS Lambda function name to the logical resource id of the function on local
-as it is required my AWS SAM local invoke.
+as it is required by AWS SAM local invoke.
 
 ## Run
 
