@@ -240,6 +240,19 @@ In addition to common [configurations](../README.md#configuration), there are al
 
 - If you encounter the following error when running function locally,
   ```
+  Error:
+  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+  ...
+  ```
+  
+  You need to enable individual packaging with the following configuration in your `serverless.yml`:
+  ```yml
+  package:
+    individually: true
+  ```
+  
+- If you encounter the following error when running function locally,
+  ```
   Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
   ...
   Error:
