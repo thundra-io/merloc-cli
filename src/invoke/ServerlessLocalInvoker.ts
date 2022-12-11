@@ -75,6 +75,7 @@ const MLUPINE_DOCKER_RUNTIMES = new Set([
     'nodejs12.x',
     'nodejs14.x',
     'nodejs16.x',
+    'nodejs18.x',
     'python3.8',
     'python3.9',
     'ruby2.7',
