@@ -7,6 +7,7 @@
 | `nodejs12.x`    | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `nodejs14.x`    | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `nodejs16.x`    | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
+| `nodejs18.x`    | :white_check_mark: |     :white_check_mark:     | :white_check_mark: |
 | `python3.7`     | :white_check_mark: | :eight_pointed_black_star: | :white_check_mark: |
 | `python3.8`     | :white_check_mark: | :eight_pointed_black_star: | :white_check_mark: |
 | `python3.9`     | :white_check_mark: | :eight_pointed_black_star: | :white_check_mark: |
