@@ -11,7 +11,9 @@ import {
     isReloadEnabled,
     getWatchPaths,
     getAPIKey,
+    isPhoneHomeDisabled,
 } from './configs';
+import { exit, registerExitHook } from './exit';
 import * as logger from './logger';
 import BrokerClient, { MessageListener } from './client/BrokerClient';
 import BrokerMessage from './domain/BrokerMessage';
@@ -20,6 +22,7 @@ import MessageHandler from './handler/MessageHandler';
 import { CLIENT_CONNECTION_TYPE } from './constants';
 import RuntimeManager from './invoke/RuntimeManager';
 import BrokerResponse from './domain/BrokerResponse';
+import PhoneHomeService from './phonehome/PhoneHomeService';
 
 const DEFAULT_FILES_NOT_TO_WATCH = [
     '**/.idea/**',
@@ -88,12 +91,41 @@ const brokerURL: string | undefined = getBrokerURL();
 const brokerMessageListener: BrokerMessageListener =
     new BrokerMessageListener();
 
-async function _initInvoker(): Promise<void> {
-    logger.debug('<index> Initializing invoker ...');
+async function _initRuntime(): Promise<void> {
+    logger.debug('<index> Initializing runtime ...');
 
     await RuntimeManager.init();
 
-    logger.debug('<index> Initialized invoker');
+    logger.debug('<index> Initialized runtime');
+}
+
+async function _initPhoneHome(): Promise<void> {
+    logger.debug('<index> Initializing phone home ...');
+
+    if (isPhoneHomeDisabled()) {
+        logger.debug('<index> Skipping phone home as it is disabled');
+        return;
+    }
+
+    const phoneHomeService: PhoneHomeService = new PhoneHomeService();
+
+    const startTime: number = Date.now();
+    try {
+        await phoneHomeService.runtimeUp(startTime);
+    } catch (err: any) {
+        logger.debug(`<index> Unable to send 'runtime.up' message`);
+    }
+
+    registerExitHook(async function phoneHomeExit() {
+        const finishTime: number = Date.now();
+        try {
+            await phoneHomeService.runtimeDown(startTime, finishTime);
+        } catch (err: any) {
+            logger.debug(`<index> Unable to send 'runtime.down' message`);
+        }
+    });
+
+    logger.debug('<index> Initialized phone home');
 }
 
 async function _initBroker(): Promise<BrokerClient | undefined> {
@@ -137,7 +169,7 @@ function _initKeyListener() {
                 logger.info('Destroying ...');
                 await RuntimeManager.destroy();
             } finally {
-                process.exit();
+                await exit();
             }
         } else if (key && key.ctrl && key.name == 'r') {
             logger.info('Reloading ...');
@@ -185,7 +217,10 @@ async function _init() {
     try {
         logger.info('Initializing, wait ...');
 
-        await _initInvoker();
+        // No need to await initialization of phone home
+        _initPhoneHome();
+
+        await _initRuntime();
 
         await _initBroker();
 
@@ -197,13 +232,13 @@ async function _init() {
     } catch (err: any) {
         logger.error('<index> Unable to initialize:', err);
 
-        process.exit(1);
+        await exit(1);
     }
 }
 
 if (!brokerURL) {
     logger.warn('No broker URL is configured. So exiting');
-    process.exit(1);
+    exit(1);
 }
 
 _init();
