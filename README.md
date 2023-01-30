@@ -201,6 +201,13 @@ so it can use the integrated tool (`AWS SAM`, `Serverless Framework`, ...) to ru
   merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -fc wait
   ```
 
+- `-dph` (or `--disable-phone-home`): Disables collecting host phone home metrics 
+  (machine hash, operating system name, CLI start/terminate time, etc ...).
+  For example:
+  ```
+  merloc -b wss://a1b2c3d4e5.execute-api.us-west-2.amazonaws.com/dev -dph
+  ```
+
 - `-v` (or `--verbose`): Enables verbose mode to print internal logs of the **MerLoc CLI**.
   For example:
   ```

@@ -21,10 +21,9 @@ export default class AutoLocalInvoker implements Invoker {
         } else if (fs.existsSync('./template.yml')) {
             return new SAMLocalInvoker();
         }
-        logger.error(
+        throw new Error(
             'Unable to detect default invoker. Consider specifying invoker by options. So exiting now ...'
         );
-        process.exit(1);
     }
 
     name(): string {

@@ -1,5 +1,6 @@
 import { program, Option } from 'commander';
 import { THUNDRA_BROKER_URL } from './constants';
+import { exit } from './exit';
 import { error } from './logger';
 const { version } = require('../package.json');
 
@@ -51,6 +52,12 @@ program
             .choices(['reject', 'wait'])
     )
     .addOption(
+        new Option(
+            '-dph, --disable-phone-home',
+            'Disables collecting phone home metrics'
+        )
+    )
+    .addOption(
         new Option('--sls-options <options>', 'Serverless framework options')
     )
     .addOption(
@@ -87,6 +94,7 @@ const MERLOC_RELOAD_ENABLED = options.reload;
 const MERLOC_WATCH_PATHS = options.watch;
 const MERLOC_RUNTIME_CONCURRENCY_MODE = options.runtimeConcurrency;
 const MERLOC_FUNCTION_CONCURRENCY_MODE = options.functionConcurrency;
+const MERLOC_PHONE_HOME_DISABLED = options.disablePhoneHome;
 const MERLOC_SLS_OPTIONS = options.slsOptions;
 const MERLOC_SLS_INIT_CMD = options.slsInit;
 const MERLOC_SLS_RELOAD_CMD = options.slsReload;
@@ -99,7 +107,7 @@ function _checkConfigs(): void {
         error(
             'Thundra API key is required when Thundra MerLoc broker (which is default) is used'
         );
-        process.exit(1);
+        exit(1);
     }
 }
 
@@ -141,6 +149,10 @@ export function getRuntimeConcurrencyMode(): string {
 
 export function getFunctionConcurrencyMode(): string {
     return MERLOC_FUNCTION_CONCURRENCY_MODE;
+}
+
+export function isPhoneHomeDisabled(): boolean {
+    return MERLOC_PHONE_HOME_DISABLED;
 }
 
 export function getSLSOptions(): string {

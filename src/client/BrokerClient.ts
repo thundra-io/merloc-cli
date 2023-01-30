@@ -14,6 +14,8 @@ const BROKER_CONNECT_TIMEOUT = 3000;
 const BROKER_PING_TIMEOUT = 3000;
 const BROKER_PING_INTERVAL = 30000;
 const MAX_FRAME_SIZE = 16 * 1024;
+const UNEXPECTED_4XX_RESPONSE_MESSAGE_FORMAT =
+    /^Unexpected server response: 4[0-9]{2}$/;
 
 type InFlightMessage = {
     readonly msg: any;
@@ -186,6 +188,10 @@ export default class BrokerClient {
 
             // Clear current state
             this._clearState(-1, err.message);
+
+            if (UNEXPECTED_4XX_RESPONSE_MESSAGE_FORMAT.test(err.message)) {
+                return;
+            }
 
             // Reconnect again
             setImmediate(() => {
